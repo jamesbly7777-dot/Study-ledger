@@ -1,31 +1,73 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Study Ledger</title>
 
-<!-- PWA -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f172a">
-
-<!-- FORCE ICON (this fixes your issue) -->
-<link rel="icon" href="https://cdn-icons-png.flaticon.com/512/4712/4712109.png">
-<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/4712/4712109.png">
-
 <style>
-body { font-family: Arial; background: #0f172a; color: white; margin:0; padding:15px;}
-h1 { text-align:center;}
-button { width:100%; padding:12px; margin:5px 0; font-size:16px; border:none; border-radius:10px;}
-.start { background:#22c55e;}
-.stop { background:#ef4444;}
-.reset { background:#f59e0b;}
-.card { background:#1e293b; padding:10px; border-radius:10px; margin:10px 0;}
-select,input { width:100%; padding:10px; margin:5px 0;}
-.progress { background:#334155; border-radius:10px; overflow:hidden;}
-.progress-bar { height:20px; background:#22c55e; width:0%;}
+body {
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
+  margin:0;
+  padding:20px;
+  font-size:18px;
+}
+
+h1 {
+  text-align:center;
+  font-size:28px;
+  margin-bottom:20px;
+}
+
+button {
+  width:100%;
+  padding:18px;
+  margin:8px 0;
+  font-size:18px;
+  border:none;
+  border-radius:12px;
+}
+
+.start { background:#22c55e; }
+.stop { background:#ef4444; }
+.reset { background:#f59e0b; }
+
+.card {
+  background:#1e293b;
+  padding:15px;
+  border-radius:12px;
+  margin:10px 0;
+  font-size:16px;
+}
+
+select, input {
+  width:100%;
+  padding:14px;
+  margin:8px 0;
+  font-size:16px;
+  border-radius:10px;
+  border:none;
+}
+
+.progress {
+  background:#334155;
+  border-radius:12px;
+  overflow:hidden;
+  margin:10px 0;
+}
+
+.progress-bar {
+  height:24px;
+  background:#22c55e;
+  width:0%;
+}
+
+#total {
+  font-size:20px;
+  margin-top:10px;
+}
 </style>
 </head>
 
@@ -34,8 +76,8 @@ select,input { width:100%; padding:10px; margin:5px 0;}
 <h1>Study Ledger</h1>
 
 <select id="type">
-<option>Google IT</option>
-<option>Codecademy</option>
+  <option>Google IT</option>
+  <option>Codecademy</option>
 </select>
 
 <input id="manualHours" placeholder="Manual hours (optional)">
@@ -46,7 +88,7 @@ select,input { width:100%; padding:10px; margin:5px 0;}
 <button class="reset" onclick="resetWeek()">Reset Week</button>
 
 <div class="progress">
-<div id="bar" class="progress-bar"></div>
+  <div id="bar" class="progress-bar"></div>
 </div>
 
 <h3 id="total">Total: 0 hrs / 20 hrs</h3>
@@ -57,46 +99,73 @@ select,input { width:100%; padding:10px; margin:5px 0;}
 let sessions = JSON.parse(localStorage.getItem("sessions")) || [];
 let startTime = null;
 
-function save(){ localStorage.setItem("sessions", JSON.stringify(sessions)); }
-
-function updateUI(){
-let total = sessions.reduce((a,b)=>a+b.hours,0);
-document.getElementById("total").innerText = `Total: ${total.toFixed(2)} hrs / 20 hrs`;
-document.getElementById("bar").style.width = Math.min((total/20)*100,100) + "%";
-
-let html="";
-sessions.forEach((s,i)=>{
-html += `<div class="card">${s.type} - ${s.hours.toFixed(2)} hrs
-<button onclick="del(${i})">Delete</button></div>`;
-});
-document.getElementById("sessions").innerHTML = html;
+function save(){
+  localStorage.setItem("sessions", JSON.stringify(sessions));
 }
 
-function startTimer(){ startTime = Date.now(); }
+function updateUI(){
+  let total = sessions.reduce((a,b)=>a+b.hours,0);
+  document.getElementById("total").innerText =
+    "Total: " + total.toFixed(2) + " hrs / 20 hrs";
+
+  document.getElementById("bar").style.width =
+    Math.min((total/20)*100,100) + "%";
+
+  let html="";
+  sessions.forEach((s,i)=>{
+    html += "<div class='card'>" +
+      s.type + " - " + s.hours.toFixed(2) + " hrs" +
+      "<button onclick='del(" + i + ")'>Delete</button></div>";
+  });
+
+  document.getElementById("sessions").innerHTML = html;
+}
+
+function startTimer(){
+  startTime = Date.now();
+}
 
 function stopTimer(){
-if(!startTime) return;
-let hrs = (Date.now()-startTime)/3600000;
-sessions.push({ type:document.getElementById("type").value, hours:hrs });
-startTime=null;
-save(); updateUI();
+  if(!startTime) return;
+
+  let hrs = (Date.now() - startTime) / 3600000;
+
+  sessions.push({
+    type: document.getElementById("type").value,
+    hours: hrs
+  });
+
+  startTime = null;
+  save();
+  updateUI();
 }
 
 function addManual(){
-let hrs = parseFloat(document.getElementById("manualHours").value);
-if(!hrs) return;
-sessions.push({ type:document.getElementById("type").value, hours:hrs });
-save(); updateUI();
+  let hrs = parseFloat(document.getElementById("manualHours").value);
+  if(!hrs) return;
+
+  sessions.push({
+    type: document.getElementById("type").value,
+    hours: hrs
+  });
+
+  save();
+  updateUI();
 }
 
-function del(i){ sessions.splice(i,1); save(); updateUI(); }
+function del(i){
+  sessions.splice(i,1);
+  save();
+  updateUI();
+}
 
-function resetWeek(){ sessions=[]; save(); updateUI(); }
+function resetWeek(){
+  sessions = [];
+  save();
+  updateUI();
+}
 
 updateUI();
-  if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
-  }
 </script>
 
 </body>
