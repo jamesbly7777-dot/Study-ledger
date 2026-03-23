@@ -94,6 +94,9 @@ function del(i){ sessions.splice(i,1); save(); updateUI(); }
 function resetWeek(){ sessions=[]; save(); updateUI(); }
 
 updateUI();
+  if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+  }
 </script>
 
 </body>
