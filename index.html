@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Ledger</title>
+<style>
+body { font-family: Arial; background: #0f172a; color: white; margin:0; padding:15px;}
+h1 { text-align:center;}
+button { width:100%; padding:12px; margin:5px 0; font-size:16px; border:none; border-radius:10px;}
+.start { background:#22c55e;}
+.stop { background:#ef4444;}
+.reset { background:#f59e0b;}
+.card { background:#1e293b; padding:10px; border-radius:10px; margin:10px 0;}
+select,input { width:100%; padding:10px; margin:5px 0;}
+.progress { background:#334155; border-radius:10px; overflow:hidden;}
+.progress-bar { height:20px; background:#22c55e; width:0%;}
+</style>
+</head>
+<body>
+
+<h1>Study Ledger</h1>
+
+<select id="type">
+<option>Google IT</option>
+<option>Codecademy</option>
+</select>
+
+<input id="manualHours" placeholder="Manual hours (optional)">
+
+<button class="start" onclick="startTimer()">START</button>
+<button class="stop" onclick="stopTimer()">STOP</button>
+<button onclick="addManual()">Add Manual Entry</button>
+<button class="reset" onclick="resetWeek()">Reset Week</button>
+
+<div class="progress">
+<div id="bar" class="progress-bar"></div>
+</div>
+
+<h3 id="total">Total: 0 hrs / 20 hrs</h3>
+
+<div id="sessions"></div>
+
+<script>
+let sessions = JSON.parse(localStorage.getItem("sessions")) || [];
+let startTime = null;
+
+function save(){ localStorage.setItem("sessions", JSON.stringify(sessions)); }
+
+function updateUI(){
+let total = sessions.reduce((a,b)=>a+b.hours,0);
+document.getElementById("total").innerText = `Total: ${total.toFixed(2)} hrs / 20 hrs`;
+document.getElementById("bar").style.width = Math.min((total/20)*100,100) + "%";
+
+let html="";
+sessions.forEach((s,i)=>{
+html += `<div class="card">${s.type} - ${s.hours.toFixed(2)} hrs
+<button onclick="del(${i})">Delete</button></div>`;
+});
+document.getElementById("sessions").innerHTML = html;
+}
+
+function startTimer(){ startTime = Date.now(); }
+
+function stopTimer(){
+if(!startTime) return;
+let hrs = (Date.now()-startTime)/3600000;
+sessions.push({ type:document.getElementById("type").value, hours:hrs });
+startTime=null;
+save(); updateUI();
+}
+
+function addManual(){
+let hrs = parseFloat(document.getElementById("manualHours").value);
+if(!hrs) return;
+sessions.push({ type:document.getElementById("type").value, hours:hrs });
+save(); updateUI();
+}
+
+function del(i){ sessions.splice(i,1); save(); updateUI(); }
+
+function resetWeek(){ sessions=[]; save(); updateUI(); }
+
+updateUI();
+</script>
+
+</body>
+</html>
