@@ -1,11 +1,17 @@
 {
   "name": "Study Ledger",
   "short_name": "Ledger",
-  "start_url": ".",
+  "start_url": "/Study-ledger/",
+  "scope": "/Study-ledger/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
     {
       "src": "icon.png",
       "sizes": "192x192",
