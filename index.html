@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Study Ledger</title>
-  <meta name="theme-color" content="#0b1220" />
+  <meta name="theme-color" content="#07101f" />
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.png" />
   <style>
     * { box-sizing: border-box; }
     body {
@@ -40,6 +41,7 @@
     .hero .sub {
       color: #dbe7ff;
       font-size: 16px;
+      margin-top: 8px;
     }
     .card {
       background: #0d1730;
@@ -66,10 +68,11 @@
     .violet { color: #c8a5ff; }
     .amber { color: #ffd36d; }
     .cyan { color: #8ddfff; }
+    .green { color: #7df0a8; }
 
     .tabs {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
       gap: 10px;
       margin-bottom: 16px;
     }
@@ -109,6 +112,11 @@
     button.secondary {
       background: #132242;
       color: white;
+    }
+    button.danger {
+      background: #8b1e2d;
+      color: white;
+      border: none;
     }
 
     .progress-wrap {
@@ -183,8 +191,22 @@
       font-size: 14px;
     }
 
+    .backup-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .summary-box {
+      background: #091224;
+      border: 1px solid #1b2a4e;
+      border-radius: 18px;
+      padding: 14px;
+      margin-top: 12px;
+    }
+
     .footer-space {
-      height: 20px;
+      height: 24px;
     }
   </style>
 </head>
@@ -194,7 +216,8 @@
       <div class="small">ANDROID-STYLE LEDGER</div>
       <h1>📘 Study Ledger</h1>
       <div class="sub" id="weekLabel">Week: Mon --/--/---- → Sun --/--/----</div>
-      <div class="sub" style="margin-top:8px;">Open on phone • saves automatically</div>
+      <div class="sub">Open on phone • saves automatically</div>
+      <div class="sub" id="monthLabel">Month: ----</div>
     </div>
 
     <div class="card">
@@ -212,20 +235,20 @@
 
     <div class="grid">
       <div class="card">
+        <div class="stat-title">Current week</div>
+        <div class="stat-value violet" id="weekTotal">0.00</div>
+      </div>
+      <div class="card">
+        <div class="stat-title">Current month</div>
+        <div class="stat-value green" id="monthTotal">0.00</div>
+      </div>
+      <div class="card">
         <div class="stat-title">Google IT</div>
         <div class="stat-value blue" id="googleTotal">0.00</div>
       </div>
       <div class="card">
         <div class="stat-title">Codecademy</div>
         <div class="stat-value cyan" id="codeTotal">0.00</div>
-      </div>
-      <div class="card">
-        <div class="stat-title">Week total</div>
-        <div class="stat-value violet" id="weekTotal">0.00</div>
-      </div>
-      <div class="card">
-        <div class="stat-title">Remaining</div>
-        <div class="stat-value amber" id="remainingTotal">20.00</div>
       </div>
     </div>
 
@@ -238,11 +261,13 @@
         <div class="progress-bar" id="weeklyProgressBar"></div>
       </div>
       <div class="muted" style="text-align:right; margin-top:8px;" id="weeklyPercentText">0.0% complete</div>
+      <div class="muted" style="text-align:right; margin-top:6px;" id="remainingText">Remaining: 20.00 hrs</div>
     </div>
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="ledger">Ledger</button>
       <button class="tab-btn" data-tab="add">Add</button>
+      <button class="tab-btn" data-tab="stats">Stats</button>
       <button class="tab-btn" data-tab="settings">Settings</button>
     </div>
 
@@ -262,6 +287,28 @@
       </div>
     </div>
 
+    <div class="panel" id="panel-stats">
+      <div class="card">
+        <div style="font-size:22px; font-weight:700; margin-bottom:10px;">Summary</div>
+        <div class="summary-box">
+          <div class="muted">All-time total</div>
+          <div class="stat-value violet" id="allTimeTotal">0.00</div>
+        </div>
+        <div class="summary-box">
+          <div class="muted">Entries logged</div>
+          <div class="stat-value blue" id="entryCount">0</div>
+        </div>
+        <div class="summary-box">
+          <div class="muted">This week</div>
+          <div class="stat-value amber" id="statsWeekTotal">0.00</div>
+        </div>
+        <div class="summary-box">
+          <div class="muted">This month</div>
+          <div class="stat-value green" id="statsMonthTotal">0.00</div>
+        </div>
+      </div>
+    </div>
+
     <div class="panel" id="panel-settings">
       <div class="card">
         <input id="currentCourse" placeholder="Current course" />
@@ -269,7 +316,15 @@
         <input id="currentProgress" type="number" min="0" max="100" placeholder="Progress %" />
         <input id="weeklyGoal" type="number" step="0.01" placeholder="Weekly goal" />
         <button class="primary" onclick="saveSettings()">Save Settings</button>
-        <button class="secondary" onclick="exportBackup()">Export Backup</button>
+
+        <div class="backup-row">
+          <button class="secondary" onclick="exportBackup()">Export Backup</button>
+          <button class="secondary" onclick="document.getElementById('importFile').click()">Import Backup</button>
+        </div>
+
+        <input type="file" id="importFile" accept=".json,application/json" style="display:none;" />
+
+        <button class="danger" onclick="clearAllData()">Clear All Data</button>
       </div>
     </div>
 
@@ -277,7 +332,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = "study-ledger-rich-v1";
+    const STORAGE_KEY = "study-ledger-rich-v2";
 
     let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
       weeklyGoal: 20,
@@ -297,6 +352,10 @@
       return Number(n || 0).toFixed(2);
     }
 
+    function todayDateString() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
     function prettyDate(dateString) {
       const [y, m, d] = dateString.split("-");
       return `${m}/${d}/${y}`;
@@ -310,31 +369,68 @@
       return d;
     }
 
-    function weekLabel() {
-      if (!state.entries.length) return "Week: Mon --/--/---- → Sun --/--/----";
-      const dates = state.entries.map(e => e.date).sort();
-      const start = startOfWeek(dates[0]);
+    function endOfWeek(dateString) {
+      const start = startOfWeek(dateString);
       const end = new Date(start);
       end.setDate(start.getDate() + 6);
-      const fmt = d => `${String(d.getMonth() + 1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`;
-      return `Week: Mon ${fmt(start)} → Sun ${fmt(end)}`;
+      return end;
+    }
+
+    function fmtDateObj(d) {
+      return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${d.getFullYear()}`;
+    }
+
+    function currentWeekLabel() {
+      const today = todayDateString();
+      return `Week: Mon ${fmtDateObj(startOfWeek(today))} → Sun ${fmtDateObj(endOfWeek(today))}`;
+    }
+
+    function currentMonthLabel() {
+      const d = new Date();
+      return `Month: ${d.toLocaleString("en-US", { month: "long", year: "numeric" })}`;
+    }
+
+    function isSameWeek(dateString) {
+      const target = new Date(dateString + "T12:00:00");
+      const start = startOfWeek(todayDateString());
+      const end = endOfWeek(todayDateString());
+      return target >= start && target <= end;
+    }
+
+    function isSameMonth(dateString) {
+      const d = new Date(dateString + "T12:00:00");
+      const now = new Date();
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     }
 
     function totals() {
-      let google = 0, code = 0;
+      let google = 0;
+      let code = 0;
+      let week = 0;
+      let month = 0;
+      let all = 0;
+
       state.entries.forEach(e => {
-        if (e.course === "Google IT") google += Number(e.hours);
-        if (e.course === "Codecademy") code += Number(e.hours);
+        const hrs = Number(e.hours) || 0;
+        all += hrs;
+        if (e.course === "Google IT") google += hrs;
+        if (e.course === "Codecademy") code += hrs;
+        if (isSameWeek(e.date)) week += hrs;
+        if (isSameMonth(e.date)) month += hrs;
       });
-      const total = google + code;
-      const remaining = Math.max(state.weeklyGoal - total, 0);
-      const percent = state.weeklyGoal > 0 ? Math.min((total / state.weeklyGoal) * 100, 100) : 0;
-      return { google, code, total, remaining, percent };
+
+      const remaining = Math.max(state.weeklyGoal - week, 0);
+      const percent = state.weeklyGoal > 0 ? Math.min((week / state.weeklyGoal) * 100, 100) : 0;
+
+      return { google, code, week, month, all, remaining, percent };
     }
 
     function renderTop() {
       const t = totals();
-      document.getElementById("weekLabel").textContent = weekLabel();
+
+      document.getElementById("weekLabel").textContent = currentWeekLabel();
+      document.getElementById("monthLabel").textContent = currentMonthLabel();
+
       document.getElementById("currentCourseText").textContent = state.currentCourse;
       document.getElementById("currentModuleText").textContent = state.currentModule;
       document.getElementById("currentProgressText").textContent = `${state.currentProgress}%`;
@@ -342,11 +438,18 @@
 
       document.getElementById("googleTotal").textContent = formatHours(t.google);
       document.getElementById("codeTotal").textContent = formatHours(t.code);
-      document.getElementById("weekTotal").textContent = formatHours(t.total);
-      document.getElementById("remainingTotal").textContent = formatHours(t.remaining);
+      document.getElementById("weekTotal").textContent = formatHours(t.week);
+      document.getElementById("monthTotal").textContent = formatHours(t.month);
+
       document.getElementById("weeklyGoalText").textContent = `${formatHours(state.weeklyGoal)} hrs`;
       document.getElementById("weeklyProgressBar").style.width = `${t.percent}%`;
       document.getElementById("weeklyPercentText").textContent = `${t.percent.toFixed(1)}% complete`;
+      document.getElementById("remainingText").textContent = `Remaining: ${formatHours(t.remaining)} hrs`;
+
+      document.getElementById("allTimeTotal").textContent = formatHours(t.all);
+      document.getElementById("entryCount").textContent = state.entries.length;
+      document.getElementById("statsWeekTotal").textContent = formatHours(t.week);
+      document.getElementById("statsMonthTotal").textContent = formatHours(t.month);
     }
 
     function renderLedger() {
@@ -355,7 +458,7 @@
 
       const grouped = {};
       [...state.entries]
-        .sort((a, b) => a.date.localeCompare(b.date))
+        .sort((a, b) => b.date.localeCompare(a.date))
         .forEach(entry => {
           if (!grouped[entry.date]) grouped[entry.date] = [];
           grouped[entry.date].push(entry);
@@ -381,7 +484,7 @@
         let dayTotal = 0;
 
         items.forEach(entry => {
-          dayTotal += Number(entry.hours);
+          dayTotal += Number(entry.hours) || 0;
           const div = document.createElement("div");
           div.className = "entry";
           div.innerHTML = `
@@ -437,7 +540,11 @@
 
       const entry = {
         id: editingId || crypto.randomUUID(),
-        date, course, hours, focus, notes
+        date,
+        course,
+        hours,
+        focus,
+        notes
       };
 
       if (editingId) {
@@ -455,7 +562,7 @@
     }
 
     function clearForm() {
-      document.getElementById("date").value = new Date().toISOString().slice(0,10);
+      document.getElementById("date").value = todayDateString();
       document.getElementById("course").value = "Google IT";
       document.getElementById("hours").value = "";
       document.getElementById("focus").value = "4";
@@ -465,6 +572,7 @@
     function editEntry(id) {
       const entry = state.entries.find(e => e.id === id);
       if (!entry) return;
+
       editingId = id;
       document.getElementById("date").value = entry.date;
       document.getElementById("course").value = entry.course;
@@ -476,6 +584,7 @@
     }
 
     function deleteEntry(id) {
+      if (!confirm("Delete this entry?")) return;
       state.entries = state.entries.filter(e => e.id !== id);
       saveState();
       renderAll();
@@ -492,13 +601,69 @@
     }
 
     function exportBackup() {
-      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const backup = {
+        exportedAt: new Date().toISOString(),
+        app: "Study Ledger",
+        version: 2,
+        data: state
+      };
+
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "study-ledger-backup.json";
+      a.download = `study-ledger-backup-${todayDateString()}.json`;
       a.click();
       URL.revokeObjectURL(url);
+    }
+
+    function importBackupFile(file) {
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          const parsed = JSON.parse(event.target.result);
+
+          let importedData = null;
+
+          if (parsed && parsed.data && Array.isArray(parsed.data.entries)) {
+            importedData = parsed.data;
+          } else if (parsed && Array.isArray(parsed.entries)) {
+            importedData = parsed;
+          }
+
+          if (!importedData) {
+            alert("Invalid backup file.");
+            return;
+          }
+
+          state = {
+            weeklyGoal: Number(importedData.weeklyGoal || 20),
+            currentCourse: importedData.currentCourse || "Google IT",
+            currentModule: importedData.currentModule || "Course 2 – Networking",
+            currentProgress: Number(importedData.currentProgress || 0),
+            entries: Array.isArray(importedData.entries) ? importedData.entries : []
+          };
+
+          saveState();
+          clearForm();
+          renderAll();
+          alert("Backup imported.");
+        } catch (err) {
+          alert("Could not import backup file.");
+        }
+      };
+
+      reader.readAsText(file);
+    }
+
+    function clearAllData() {
+      if (!confirm("Clear all ledger data? This cannot be undone unless you exported a backup.")) return;
+      state.entries = [];
+      saveState();
+      clearForm();
+      renderAll();
     }
 
     function switchTab(name) {
@@ -514,6 +679,11 @@
     });
 
     document.getElementById("saveBtn").addEventListener("click", addOrUpdateEntry);
+
+    document.getElementById("importFile").addEventListener("change", function(e) {
+      importBackupFile(e.target.files[0]);
+      e.target.value = "";
+    });
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
