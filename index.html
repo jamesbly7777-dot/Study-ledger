@@ -1,171 +1,119 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Study Ledger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Ledger</title>
 
-<style>
-body {
-  font-family: Arial;
-  background: #0f172a;
-  color: white;
-  margin:0;
-  padding:20px;
-  font-size:18px;
-}
+  <style>
+    body {
+      font-family: Arial;
+      background: #0b1220;
+      color: white;
+      padding: 15px;
+    }
 
-h1 {
-  text-align:center;
-  font-size:28px;
-  margin-bottom:20px;
-}
+    .card {
+      background: #121a2f;
+      padding: 15px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+    }
 
-button {
-  width:100%;
-  padding:18px;
-  margin:8px 0;
-  font-size:18px;
-  border:none;
-  border-radius:12px;
-}
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+    }
 
-.start { background:#22c55e; }
-.stop { background:#ef4444; }
-.reset { background:#f59e0b; }
+    button {
+      background: #3b82f6;
+      color: white;
+    }
 
-.card {
-  background:#1e293b;
-  padding:15px;
-  border-radius:12px;
-  margin:10px 0;
-  font-size:16px;
-}
-
-select, input {
-  width:100%;
-  padding:14px;
-  margin:8px 0;
-  font-size:16px;
-  border-radius:10px;
-  border:none;
-}
-
-.progress {
-  background:#334155;
-  border-radius:12px;
-  overflow:hidden;
-  margin:10px 0;
-}
-
-.progress-bar {
-  height:24px;
-  background:#22c55e;
-  width:0%;
-}
-
-#total {
-  font-size:20px;
-  margin-top:10px;
-}
-</style>
+    h2 {
+      margin-bottom: 5px;
+    }
+  </style>
 </head>
 
 <body>
 
-<h1>Study Ledger</h1>
+<h2>📘 Study Ledger</h2>
 
-<select id="type">
-  <option>Google IT</option>
-  <option>Codecademy</option>
-</select>
-
-<input id="manualHours" placeholder="Manual hours (optional)">
-
-<button class="start" onclick="startTimer()">START</button>
-<button class="stop" onclick="stopTimer()">STOP</button>
-<button onclick="addManual()">Add Manual Entry</button>
-<button class="reset" onclick="resetWeek()">Reset Week</button>
-
-<div class="progress">
-  <div id="bar" class="progress-bar"></div>
+<div class="card">
+  <input id="hours" placeholder="Hours">
+  <select id="course">
+    <option>Google IT</option>
+    <option>Codecademy</option>
+  </select>
+  <button onclick="addEntry()">Add Entry</button>
 </div>
 
-<h3 id="total">Total: 0 hrs / 20 hrs</h3>
+<div id="entries"></div>
 
-<div id="sessions"></div>
+<div class="card">
+  <h3>Totals</h3>
+  <div id="google"></div>
+  <div id="code"></div>
+  <div id="total"></div>
+  <div id="remaining"></div>
+</div>
 
 <script>
-let sessions = JSON.parse(localStorage.getItem("sessions")) || [];
-let startTime = null;
+let entries = JSON.parse(localStorage.getItem("ledger")) || [];
 
-function save(){
-  localStorage.setItem("sessions", JSON.stringify(sessions));
+function save() {
+  localStorage.setItem("ledger", JSON.stringify(entries));
 }
 
-function updateUI(){
-  let total = sessions.reduce((a,b)=>a+b.hours,0);
-  document.getElementById("total").innerText =
-    "Total: " + total.toFixed(2) + " hrs / 20 hrs";
+function addEntry() {
+  let hours = parseFloat(document.getElementById("hours").value);
+  let course = document.getElementById("course").value;
 
-  document.getElementById("bar").style.width =
-    Math.min((total/20)*100,100) + "%";
+  if (!hours) return;
 
-  let html="";
-  sessions.forEach((s,i)=>{
-    html += "<div class='card'>" +
-      s.type + " - " + s.hours.toFixed(2) + " hrs" +
-      "<button onclick='del(" + i + ")'>Delete</button></div>";
-  });
-
-  document.getElementById("sessions").innerHTML = html;
-}
-
-function startTimer(){
-  startTime = Date.now();
-}
-
-function stopTimer(){
-  if(!startTime) return;
-
-  let hrs = (Date.now() - startTime) / 3600000;
-
-  sessions.push({
-    type: document.getElementById("type").value,
-    hours: hrs
-  });
-
-  startTime = null;
-  save();
-  updateUI();
-}
-
-function addManual(){
-  let hrs = parseFloat(document.getElementById("manualHours").value);
-  if(!hrs) return;
-
-  sessions.push({
-    type: document.getElementById("type").value,
-    hours: hrs
+  entries.push({
+    date: new Date().toLocaleDateString(),
+    hours,
+    course
   });
 
   save();
-  updateUI();
+  render();
 }
 
-function del(i){
-  sessions.splice(i,1);
-  save();
-  updateUI();
+function render() {
+  let list = document.getElementById("entries");
+  list.innerHTML = "";
+
+  let google = 0;
+  let code = 0;
+
+  entries.forEach(e => {
+    list.innerHTML += `
+      <div class="card">
+        ${e.date} — ${e.course} → ${e.hours} hrs
+      </div>
+    `;
+
+    if (e.course === "Google IT") google += e.hours;
+    if (e.course === "Codecademy") code += e.hours;
+  });
+
+  let total = google + code;
+  let goal = 20;
+  let remaining = goal - total;
+
+  document.getElementById("google").innerText = "Google IT: " + google.toFixed(2);
+  document.getElementById("code").innerText = "Codecademy: " + code.toFixed(2);
+  document.getElementById("total").innerText = "Total: " + total.toFixed(2);
+  document.getElementById("remaining").innerText = "Remaining: " + remaining.toFixed(2);
 }
 
-function resetWeek(){
-  sessions = [];
-  save();
-  updateUI();
-}
-
-updateUI();
+render();
 </script>
 
 </body>
