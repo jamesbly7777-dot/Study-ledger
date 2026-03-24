@@ -1,120 +1,528 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Study Ledger</title>
-
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="manifest" href="manifest.json" />
   <style>
+    * { box-sizing: border-box; }
     body {
-      font-family: Arial;
-      background: #0b1220;
-      color: white;
-      padding: 15px;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #07101f;
+      color: #fff;
+      padding: 16px;
     }
-
-    .card {
-      background: #121a2f;
-      padding: 15px;
-      margin-bottom: 12px;
-      border-radius: 12px;
+    .wrap {
+      max-width: 520px;
+      margin: 0 auto;
     }
-
-    input, select, button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 8px;
-      border-radius: 10px;
-      border: none;
+    .hero {
+      background: linear-gradient(180deg, #2d5bdb, #183a9c);
+      border-radius: 24px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+    }
+    .hero .small {
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: #dbe7ff;
+      margin-bottom: 8px;
+    }
+    .hero h1 {
+      margin: 0 0 10px 0;
+      font-size: 34px;
+      line-height: 1.05;
+    }
+    .hero .sub {
+      color: #dbe7ff;
       font-size: 16px;
     }
+    .card {
+      background: #0d1730;
+      border: 1px solid #1b2a4e;
+      border-radius: 22px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .stat-title {
+      color: #9fb3df;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-size: 34px;
+      font-weight: 700;
+    }
+    .blue { color: #78b5ff; }
+    .violet { color: #c8a5ff; }
+    .amber { color: #ffd36d; }
+    .cyan { color: #8ddfff; }
 
-    button {
-      background: #3b82f6;
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .tab-btn {
+      background: #0d1730;
+      border: 1px solid #26428e;
+      color: white;
+      border-radius: 18px;
+      padding: 14px 10px;
+      font-size: 16px;
+    }
+    .tab-btn.active {
+      background: #17367d;
+      box-shadow: inset 0 0 0 1px #4c82ff;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    input, select, textarea, button {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid #31466f;
+      font-size: 18px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    input, select, textarea {
+      background: #eef2ff;
+      color: #111;
+    }
+    button.primary {
+      background: #4280ea;
+      color: white;
+      border: none;
+    }
+    button.secondary {
+      background: #132242;
       color: white;
     }
 
-    h2 {
-      margin-bottom: 5px;
+    .progress-wrap {
+      background: #081228;
+      border-radius: 999px;
+      height: 16px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #4b89ff;
+    }
+
+    .entry {
+      background: #091224;
+      border: 1px solid #1b2a4e;
+      border-radius: 18px;
+      padding: 14px;
+      margin-top: 12px;
+    }
+    .entry-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .entry-course {
+      font-weight: 700;
+      font-size: 19px;
+    }
+    .entry-hours {
+      color: #78b5ff;
+      font-weight: 700;
+      font-size: 22px;
+      white-space: nowrap;
+    }
+    .entry-notes {
+      color: #a8b7d8;
+      margin-top: 6px;
+      font-size: 14px;
+    }
+    .entry-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .entry-actions button {
+      margin: 0;
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    .day-block {
+      margin-bottom: 14px;
+    }
+    .day-title {
+      font-size: 28px;
+      letter-spacing: 2px;
+      margin: 18px 0 12px;
+    }
+    .day-total {
+      color: #c8a5ff;
+      font-weight: 700;
+      margin-top: 10px;
+      font-size: 18px;
+    }
+
+    .muted {
+      color: #9fb3df;
+      font-size: 14px;
+    }
+
+    .footer-space {
+      height: 20px;
     }
   </style>
 </head>
-
 <body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="small">ANDROID-STYLE LEDGER</div>
+      <h1>📘 Study Ledger</h1>
+      <div class="sub" id="weekLabel">Week: Mon --/--/---- → Sun --/--/----</div>
+      <div class="sub" style="margin-top:8px;">Open on phone • saves automatically</div>
+    </div>
 
-<h2>📘 Study Ledger</h2>
-
-<div class="card">
-  <input id="hours" placeholder="Hours">
-  <select id="course">
-    <option>Google IT</option>
-    <option>Codecademy</option>
-  </select>
-  <button onclick="addEntry()">Add Entry</button>
-</div>
-
-<div id="entries"></div>
-
-<div class="card">
-  <h3>Totals</h3>
-  <div id="google"></div>
-  <div id="code"></div>
-  <div id="total"></div>
-  <div id="remaining"></div>
-</div>
-
-<script>
-let entries = JSON.parse(localStorage.getItem("ledger")) || [];
-
-function save() {
-  localStorage.setItem("ledger", JSON.stringify(entries));
-}
-
-function addEntry() {
-  let hours = parseFloat(document.getElementById("hours").value);
-  let course = document.getElementById("course").value;
-
-  if (!hours) return;
-
-  entries.push({
-    date: new Date().toLocaleDateString(),
-    hours,
-    course
-  });
-
-  save();
-  render();
-}
-
-function render() {
-  let list = document.getElementById("entries");
-  list.innerHTML = "";
-
-  let google = 0;
-  let code = 0;
-
-  entries.forEach(e => {
-    list.innerHTML += `
-      <div class="card">
-        ${e.date} — ${e.course} → ${e.hours} hrs
+    <div class="card">
+      <div class="muted">Current course</div>
+      <div style="font-size:28px; font-weight:700;" id="currentCourseText">Google IT</div>
+      <div class="muted" id="currentModuleText">Course 2 – Networking</div>
+      <div style="margin-top:10px; display:flex; justify-content:space-between;">
+        <span class="muted">Progress</span>
+        <span class="blue" id="currentProgressText">78%</span>
       </div>
-    `;
+      <div class="progress-wrap">
+        <div class="progress-bar" id="courseProgressBar"></div>
+      </div>
+    </div>
 
-    if (e.course === "Google IT") google += e.hours;
-    if (e.course === "Codecademy") code += e.hours;
-  });
+    <div class="grid">
+      <div class="card">
+        <div class="stat-title">Google IT</div>
+        <div class="stat-value blue" id="googleTotal">0.00</div>
+      </div>
+      <div class="card">
+        <div class="stat-title">Codecademy</div>
+        <div class="stat-value cyan" id="codeTotal">0.00</div>
+      </div>
+      <div class="card">
+        <div class="stat-title">Week total</div>
+        <div class="stat-value violet" id="weekTotal">0.00</div>
+      </div>
+      <div class="card">
+        <div class="stat-title">Remaining</div>
+        <div class="stat-value amber" id="remainingTotal">20.00</div>
+      </div>
+    </div>
 
-  let total = google + code;
-  let goal = 20;
-  let remaining = goal - total;
+    <div class="card">
+      <div style="display:flex; justify-content:space-between;">
+        <span class="muted">Weekly goal</span>
+        <span id="weeklyGoalText">20.00 hrs</span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar" id="weeklyProgressBar"></div>
+      </div>
+      <div class="muted" style="text-align:right; margin-top:8px;" id="weeklyPercentText">0.0% complete</div>
+    </div>
 
-  document.getElementById("google").innerText = "Google IT: " + google.toFixed(2);
-  document.getElementById("code").innerText = "Codecademy: " + code.toFixed(2);
-  document.getElementById("total").innerText = "Total: " + total.toFixed(2);
-  document.getElementById("remaining").innerText = "Remaining: " + remaining.toFixed(2);
-}
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="ledger">Ledger</button>
+      <button class="tab-btn" data-tab="add">Add</button>
+      <button class="tab-btn" data-tab="settings">Settings</button>
+    </div>
 
-render();
-</script>
+    <div class="panel active" id="panel-ledger"></div>
 
+    <div class="panel" id="panel-add">
+      <div class="card">
+        <input type="date" id="date" />
+        <select id="course">
+          <option>Google IT</option>
+          <option>Codecademy</option>
+        </select>
+        <input type="number" step="0.01" id="hours" placeholder="Hours" />
+        <input type="number" min="1" max="5" id="focus" placeholder="Focus 1-5" value="4" />
+        <textarea id="notes" placeholder="Notes / module / concepts learned"></textarea>
+        <button class="primary" id="saveBtn">Add Entry</button>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-settings">
+      <div class="card">
+        <input id="currentCourse" placeholder="Current course" />
+        <input id="currentModule" placeholder="Current module" />
+        <input id="currentProgress" type="number" min="0" max="100" placeholder="Progress %" />
+        <input id="weeklyGoal" type="number" step="0.01" placeholder="Weekly goal" />
+        <button class="primary" onclick="saveSettings()">Save Settings</button>
+        <button class="secondary" onclick="exportBackup()">Export Backup</button>
+      </div>
+    </div>
+
+    <div class="footer-space"></div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "study-ledger-rich-v1";
+
+    let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+      weeklyGoal: 20,
+      currentCourse: "Google IT",
+      currentModule: "Course 2 – Networking",
+      currentProgress: 78,
+      entries: []
+    };
+
+    let editingId = null;
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function formatHours(n) {
+      return Number(n || 0).toFixed(2);
+    }
+
+    function prettyDate(dateString) {
+      const [y, m, d] = dateString.split("-");
+      return `${m}/${d}/${y}`;
+    }
+
+    function startOfWeek(dateString) {
+      const d = new Date(dateString + "T12:00:00");
+      const day = d.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      d.setDate(d.getDate() + diff);
+      return d;
+    }
+
+    function weekLabel() {
+      if (!state.entries.length) return "Week: Mon --/--/---- → Sun --/--/----";
+      const dates = state.entries.map(e => e.date).sort();
+      const start = startOfWeek(dates[0]);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      const fmt = d => `${String(d.getMonth() + 1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`;
+      return `Week: Mon ${fmt(start)} → Sun ${fmt(end)}`;
+    }
+
+    function totals() {
+      let google = 0, code = 0;
+      state.entries.forEach(e => {
+        if (e.course === "Google IT") google += Number(e.hours);
+        if (e.course === "Codecademy") code += Number(e.hours);
+      });
+      const total = google + code;
+      const remaining = Math.max(state.weeklyGoal - total, 0);
+      const percent = state.weeklyGoal > 0 ? Math.min((total / state.weeklyGoal) * 100, 100) : 0;
+      return { google, code, total, remaining, percent };
+    }
+
+    function renderTop() {
+      const t = totals();
+      document.getElementById("weekLabel").textContent = weekLabel();
+      document.getElementById("currentCourseText").textContent = state.currentCourse;
+      document.getElementById("currentModuleText").textContent = state.currentModule;
+      document.getElementById("currentProgressText").textContent = `${state.currentProgress}%`;
+      document.getElementById("courseProgressBar").style.width = `${state.currentProgress}%`;
+
+      document.getElementById("googleTotal").textContent = formatHours(t.google);
+      document.getElementById("codeTotal").textContent = formatHours(t.code);
+      document.getElementById("weekTotal").textContent = formatHours(t.total);
+      document.getElementById("remainingTotal").textContent = formatHours(t.remaining);
+      document.getElementById("weeklyGoalText").textContent = `${formatHours(state.weeklyGoal)} hrs`;
+      document.getElementById("weeklyProgressBar").style.width = `${t.percent}%`;
+      document.getElementById("weeklyPercentText").textContent = `${t.percent.toFixed(1)}% complete`;
+    }
+
+    function renderLedger() {
+      const wrap = document.getElementById("panel-ledger");
+      wrap.innerHTML = "";
+
+      const grouped = {};
+      [...state.entries]
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .forEach(entry => {
+          if (!grouped[entry.date]) grouped[entry.date] = [];
+          grouped[entry.date].push(entry);
+        });
+
+      const dates = Object.keys(grouped);
+
+      if (!dates.length) {
+        wrap.innerHTML = `<div class="card"><div style="font-size:18px;">No entries yet. Tap <b>Add</b> to log your first study block.</div></div>`;
+        return;
+      }
+
+      dates.forEach(date => {
+        const items = grouped[date];
+        const block = document.createElement("div");
+        block.className = "day-block";
+
+        const dayTitle = document.createElement("div");
+        dayTitle.className = "day-title";
+        dayTitle.textContent = prettyDate(date);
+        block.appendChild(dayTitle);
+
+        let dayTotal = 0;
+
+        items.forEach(entry => {
+          dayTotal += Number(entry.hours);
+          const div = document.createElement("div");
+          div.className = "entry";
+          div.innerHTML = `
+            <div class="entry-top">
+              <div>
+                <div class="entry-course">${entry.course}</div>
+                <div class="entry-notes">${entry.notes || "No notes"}</div>
+              </div>
+              <div class="entry-hours">${formatHours(entry.hours)} hrs</div>
+            </div>
+            <div class="entry-notes">Focus ${entry.focus || 4}/5</div>
+            <div class="entry-actions">
+              <button class="secondary" onclick="editEntry('${entry.id}')">Edit</button>
+              <button class="secondary" onclick="deleteEntry('${entry.id}')">Delete</button>
+            </div>
+          `;
+          block.appendChild(div);
+        });
+
+        const total = document.createElement("div");
+        total.className = "day-total";
+        total.textContent = `Day total: ${formatHours(dayTotal)} hrs`;
+        block.appendChild(total);
+
+        wrap.appendChild(block);
+      });
+    }
+
+    function renderSettings() {
+      document.getElementById("currentCourse").value = state.currentCourse;
+      document.getElementById("currentModule").value = state.currentModule;
+      document.getElementById("currentProgress").value = state.currentProgress;
+      document.getElementById("weeklyGoal").value = state.weeklyGoal;
+    }
+
+    function renderAll() {
+      renderTop();
+      renderLedger();
+      renderSettings();
+    }
+
+    function addOrUpdateEntry() {
+      const date = document.getElementById("date").value;
+      const course = document.getElementById("course").value;
+      const hours = Number(document.getElementById("hours").value);
+      const focus = Number(document.getElementById("focus").value || 4);
+      const notes = document.getElementById("notes").value.trim();
+
+      if (!date || !course || !hours) {
+        alert("Enter date, course, and hours.");
+        return;
+      }
+
+      const entry = {
+        id: editingId || crypto.randomUUID(),
+        date, course, hours, focus, notes
+      };
+
+      if (editingId) {
+        state.entries = state.entries.map(e => e.id === editingId ? entry : e);
+        editingId = null;
+        document.getElementById("saveBtn").textContent = "Add Entry";
+      } else {
+        state.entries.push(entry);
+      }
+
+      saveState();
+      clearForm();
+      renderAll();
+      switchTab("ledger");
+    }
+
+    function clearForm() {
+      document.getElementById("date").value = new Date().toISOString().slice(0,10);
+      document.getElementById("course").value = "Google IT";
+      document.getElementById("hours").value = "";
+      document.getElementById("focus").value = "4";
+      document.getElementById("notes").value = "";
+    }
+
+    function editEntry(id) {
+      const entry = state.entries.find(e => e.id === id);
+      if (!entry) return;
+      editingId = id;
+      document.getElementById("date").value = entry.date;
+      document.getElementById("course").value = entry.course;
+      document.getElementById("hours").value = entry.hours;
+      document.getElementById("focus").value = entry.focus || 4;
+      document.getElementById("notes").value = entry.notes || "";
+      document.getElementById("saveBtn").textContent = "Save Changes";
+      switchTab("add");
+    }
+
+    function deleteEntry(id) {
+      state.entries = state.entries.filter(e => e.id !== id);
+      saveState();
+      renderAll();
+    }
+
+    function saveSettings() {
+      state.currentCourse = document.getElementById("currentCourse").value.trim() || "Google IT";
+      state.currentModule = document.getElementById("currentModule").value.trim() || "Course 2 – Networking";
+      state.currentProgress = Number(document.getElementById("currentProgress").value || 0);
+      state.weeklyGoal = Number(document.getElementById("weeklyGoal").value || 20);
+      saveState();
+      renderAll();
+      alert("Settings saved.");
+    }
+
+    function exportBackup() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "study-ledger-backup.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.tab === name);
+      });
+      document.querySelectorAll(".panel").forEach(panel => panel.classList.remove("active"));
+      document.getElementById(`panel-${name}`).classList.add("active");
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+    });
+
+    document.getElementById("saveBtn").addEventListener("click", addOrUpdateEntry);
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+
+    clearForm();
+    renderAll();
+  </script>
 </body>
 </html>
