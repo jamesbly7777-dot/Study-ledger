@@ -17,7 +17,7 @@
       padding: 16px;
     }
     .wrap {
-      max-width: 520px;
+      max-width: 560px;
       margin: 0 auto;
     }
     .hero {
@@ -112,6 +112,7 @@
     button.secondary {
       background: #132242;
       color: white;
+      border: none;
     }
     button.danger {
       background: #8b1e2d;
@@ -130,6 +131,7 @@
       height: 100%;
       width: 0%;
       background: #4b89ff;
+      transition: width .25s ease;
     }
 
     .entry {
@@ -208,16 +210,22 @@
     .footer-space {
       height: 24px;
     }
+
+    .small-note {
+      font-size: 13px;
+      color: #a8b7d8;
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="hero">
-      <div class="small">ANDROID-STYLE LEDGER</div>
+      <div class="small">LEDGER VERSION</div>
       <h1>📘 Study Ledger</h1>
       <div class="sub" id="weekLabel">Week: Mon --/--/---- → Sun --/--/----</div>
-      <div class="sub">Open on phone • saves automatically</div>
       <div class="sub" id="monthLabel">Month: ----</div>
+      <div class="sub">Entry-based tracking • backup enabled</div>
     </div>
 
     <div class="card">
@@ -226,7 +234,7 @@
       <div class="muted" id="currentModuleText">Course 2 – Networking</div>
       <div style="margin-top:10px; display:flex; justify-content:space-between;">
         <span class="muted">Progress</span>
-        <span class="blue" id="currentProgressText">78%</span>
+        <span class="blue" id="currentProgressText">0%</span>
       </div>
       <div class="progress-wrap">
         <div class="progress-bar" id="courseProgressBar"></div>
@@ -284,24 +292,29 @@
         <input type="number" min="1" max="5" id="focus" placeholder="Focus 1-5" value="4" />
         <textarea id="notes" placeholder="Notes / module / concepts learned"></textarea>
         <button class="primary" id="saveBtn">Add Entry</button>
+        <div class="small-note">Each entry is saved separately. Totals recalculate from raw entries, not from manual totals.</div>
       </div>
     </div>
 
     <div class="panel" id="panel-stats">
       <div class="card">
         <div style="font-size:22px; font-weight:700; margin-bottom:10px;">Summary</div>
+
         <div class="summary-box">
           <div class="muted">All-time total</div>
           <div class="stat-value violet" id="allTimeTotal">0.00</div>
         </div>
+
         <div class="summary-box">
           <div class="muted">Entries logged</div>
           <div class="stat-value blue" id="entryCount">0</div>
         </div>
+
         <div class="summary-box">
           <div class="muted">This week</div>
           <div class="stat-value amber" id="statsWeekTotal">0.00</div>
         </div>
+
         <div class="summary-box">
           <div class="muted">This month</div>
           <div class="stat-value green" id="statsMonthTotal">0.00</div>
@@ -325,6 +338,11 @@
         <input type="file" id="importFile" accept=".json,application/json" style="display:none;" />
 
         <button class="danger" onclick="clearAllData()">Clear All Data</button>
+
+        <div class="small-note">
+          Export Backup saves all settings and all entries into one JSON file.<br>
+          Import Backup restores that file later.
+        </div>
       </div>
     </div>
 
@@ -332,13 +350,13 @@
   </div>
 
   <script>
-    const STORAGE_KEY = "study-ledger-rich-v2";
+    const STORAGE_KEY = "study-ledger-final-v1";
 
     let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
       weeklyGoal: 20,
       currentCourse: "Google IT",
       currentModule: "Course 2 – Networking",
-      currentProgress: 78,
+      currentProgress: 0,
       entries: []
     };
 
@@ -604,7 +622,7 @@
       const backup = {
         exportedAt: new Date().toISOString(),
         app: "Study Ledger",
-        version: 2,
+        version: 1,
         data: state
       };
 
