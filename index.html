@@ -69,6 +69,7 @@
     .amber { color: #ffd36d; }
     .cyan { color: #8ddfff; }
     .green { color: #7df0a8; }
+    .red { color: #ff9f9f; }
 
     .tabs {
       display: grid;
@@ -116,6 +117,11 @@
     }
     button.danger {
       background: #8b1e2d;
+      color: white;
+      border: none;
+    }
+    button.success {
+      background: #1d8f5a;
       color: white;
       border: none;
     }
@@ -216,16 +222,47 @@
       color: #a8b7d8;
       line-height: 1.4;
     }
+
+    .timer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .timer-value {
+      font-size: 40px;
+      font-weight: 700;
+      text-align: center;
+      color: #78b5ff;
+      margin: 10px 0 4px;
+    }
+
+    .timer-status {
+      text-align: center;
+      font-size: 15px;
+      color: #9fb3df;
+      margin-bottom: 14px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #132242;
+      color: #dbe7ff;
+      font-size: 13px;
+      margin-top: 6px;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="hero">
-      <div class="small">LEDGER VERSION</div>
+      <div class="small">LEDGER VERSION + TIMER</div>
       <h1>📘 Study Ledger</h1>
       <div class="sub" id="weekLabel">Week: Mon --/--/---- → Sun --/--/----</div>
       <div class="sub" id="monthLabel">Month: ----</div>
-      <div class="sub">Entry-based tracking • backup enabled</div>
+      <div class="sub">Entry-based tracking • backup enabled • timer added</div>
     </div>
 
     <div class="card">
@@ -238,6 +275,23 @@
       </div>
       <div class="progress-wrap">
         <div class="progress-bar" id="courseProgressBar"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="muted">Study Timer</div>
+      <select id="timerCourse">
+        <option>Google IT</option>
+        <option>Codecademy</option>
+      </select>
+      <div class="timer-value" id="timerDisplay">00:00:00</div>
+      <div class="timer-status" id="timerStatus">No active session</div>
+      <div class="timer-grid">
+        <button class="success" onclick="startTimer()">Start Study</button>
+        <button class="danger" onclick="stopTimer()">Stop Study</button>
+      </div>
+      <div class="small-note">
+        Start saves the timestamp. Stop calculates the time automatically and adds it to your ledger.
       </div>
     </div>
 
@@ -292,7 +346,7 @@
         <input type="number" min="1" max="5" id="focus" placeholder="Focus 1-5" value="4" />
         <textarea id="notes" placeholder="Notes / module / concepts learned"></textarea>
         <button class="primary" id="saveBtn">Add Entry</button>
-        <div class="small-note">Each entry is saved separately. Totals recalculate from raw entries, not from manual totals.</div>
+        <div class="small-note">Manual entry is still here as a backup option.</div>
       </div>
     </div>
 
@@ -340,7 +394,7 @@
         <button class="danger" onclick="clearAllData()">Clear All Data</button>
 
         <div class="small-note">
-          Export Backup saves all settings and all entries into one JSON file.<br>
+          Export Backup saves all settings, entries, and timer state into one JSON file.<br>
           Import Backup restores that file later.
         </div>
       </div>
@@ -350,17 +404,23 @@
   </div>
 
   <script>
-    const STORAGE_KEY = "study-ledger-final-v1";
+    const STORAGE_KEY = "study-ledger-final-v2";
 
     let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
       weeklyGoal: 20,
       currentCourse: "Google IT",
       currentModule: "Course 2 – Networking",
       currentProgress: 0,
-      entries: []
+      entries: [],
+      timer: {
+        isRunning: false,
+        startTime: null,
+        course: "Google IT"
+      }
     };
 
     let editingId = null;
+    let timerInterval = null;
 
     function saveState() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -476,7 +536,10 @@
 
       const grouped = {};
       [...state.entries]
-        .sort((a, b) => b.date.localeCompare(a.date))
+        .sort((a, b) => {
+          if (b.date !== a.date) return b.date.localeCompare(a.date);
+          return (b.createdAt || "").localeCompare(a.createdAt || "");
+        })
         .forEach(entry => {
           if (!grouped[entry.date]) grouped[entry.date] = [];
           grouped[entry.date].push(entry);
@@ -485,7 +548,7 @@
       const dates = Object.keys(grouped);
 
       if (!dates.length) {
-        wrap.innerHTML = `<div class="card"><div style="font-size:18px;">No entries yet. Tap <b>Add</b> to log your first study block.</div></div>`;
+        wrap.innerHTML = `<div class="card"><div style="font-size:18px;">No entries yet. Tap <b>Add</b> to log your first study block, or use the timer above.</div></div>`;
         return;
       }
 
@@ -505,11 +568,15 @@
           dayTotal += Number(entry.hours) || 0;
           const div = document.createElement("div");
           div.className = "entry";
+
+          const timerBadge = entry.fromTimer ? `<div class="pill">⏱ Timer entry</div>` : "";
+
           div.innerHTML = `
             <div class="entry-top">
               <div>
                 <div class="entry-course">${entry.course}</div>
                 <div class="entry-notes">${entry.notes || "No notes"}</div>
+                ${timerBadge}
               </div>
               <div class="entry-hours">${formatHours(entry.hours)} hrs</div>
             </div>
@@ -538,10 +605,114 @@
       document.getElementById("weeklyGoal").value = state.weeklyGoal;
     }
 
+    function formatDuration(ms) {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+      const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      return `${hours}:${minutes}:${seconds}`;
+    }
+
+    function renderTimer() {
+      const display = document.getElementById("timerDisplay");
+      const status = document.getElementById("timerStatus");
+      const timerCourse = document.getElementById("timerCourse");
+
+      if (!state.timer) {
+        state.timer = { isRunning: false, startTime: null, course: "Google IT" };
+      }
+
+      timerCourse.value = state.timer.course || "Google IT";
+
+      if (state.timer.isRunning && state.timer.startTime) {
+        const elapsed = Date.now() - new Date(state.timer.startTime).getTime();
+        display.textContent = formatDuration(elapsed);
+        status.textContent = `Running • ${state.timer.course} • Started ${new Date(state.timer.startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+      } else {
+        display.textContent = "00:00:00";
+        status.textContent = "No active session";
+      }
+    }
+
+    function startTimerLoop() {
+      stopTimerLoop();
+      timerInterval = setInterval(renderTimer, 1000);
+    }
+
+    function stopTimerLoop() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function startTimer() {
+      if (state.timer.isRunning) {
+        alert("A study session is already running.");
+        return;
+      }
+
+      const selectedCourse = document.getElementById("timerCourse").value;
+      state.timer = {
+        isRunning: true,
+        startTime: new Date().toISOString(),
+        course: selectedCourse
+      };
+
+      saveState();
+      renderTimer();
+      startTimerLoop();
+    }
+
+    function stopTimer() {
+      if (!state.timer.isRunning || !state.timer.startTime) {
+        alert("No active study session to stop.");
+        return;
+      }
+
+      const endTime = new Date();
+      const startTime = new Date(state.timer.startTime);
+      const elapsedMs = endTime.getTime() - startTime.getTime();
+
+      if (elapsedMs < 1000) {
+        alert("Session was too short to save.");
+        return;
+      }
+
+      const hours = +(elapsedMs / 3600000).toFixed(2);
+      const notes = `Timer session • ${startTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} - ${endTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+
+      const entry = {
+        id: crypto.randomUUID(),
+        date: endTime.toISOString().slice(0, 10),
+        course: state.timer.course,
+        hours,
+        focus: 4,
+        notes,
+        fromTimer: true,
+        createdAt: new Date().toISOString()
+      };
+
+      state.entries.push(entry);
+      state.timer = {
+        isRunning: false,
+        startTime: null,
+        course: document.getElementById("timerCourse").value
+      };
+
+      saveState();
+      renderAll();
+      renderTimer();
+      stopTimerLoop();
+      switchTab("ledger");
+      alert(`Saved ${hours.toFixed(2)} hours to your ledger.`);
+    }
+
     function renderAll() {
       renderTop();
       renderLedger();
       renderSettings();
+      renderTimer();
     }
 
     function addOrUpdateEntry() {
@@ -562,10 +733,15 @@
         course,
         hours,
         focus,
-        notes
+        notes,
+        fromTimer: false,
+        createdAt: new Date().toISOString()
       };
 
       if (editingId) {
+        const existing = state.entries.find(e => e.id === editingId);
+        entry.fromTimer = existing?.fromTimer || false;
+        entry.createdAt = existing?.createdAt || new Date().toISOString();
         state.entries = state.entries.map(e => e.id === editingId ? entry : e);
         editingId = null;
         document.getElementById("saveBtn").textContent = "Add Entry";
@@ -613,6 +789,7 @@
       state.currentModule = document.getElementById("currentModule").value.trim() || "Course 2 – Networking";
       state.currentProgress = Number(document.getElementById("currentProgress").value || 0);
       state.weeklyGoal = Number(document.getElementById("weeklyGoal").value || 20);
+      state.timer.course = document.getElementById("timerCourse").value;
       saveState();
       renderAll();
       alert("Settings saved.");
@@ -622,7 +799,7 @@
       const backup = {
         exportedAt: new Date().toISOString(),
         app: "Study Ledger",
-        version: 1,
+        version: 2,
         data: state
       };
 
@@ -661,12 +838,18 @@
             currentCourse: importedData.currentCourse || "Google IT",
             currentModule: importedData.currentModule || "Course 2 – Networking",
             currentProgress: Number(importedData.currentProgress || 0),
-            entries: Array.isArray(importedData.entries) ? importedData.entries : []
+            entries: Array.isArray(importedData.entries) ? importedData.entries : [],
+            timer: importedData.timer || { isRunning: false, startTime: null, course: "Google IT" }
           };
 
           saveState();
           clearForm();
           renderAll();
+
+          if (state.timer.isRunning) {
+            startTimerLoop();
+          }
+
           alert("Backup imported.");
         } catch (err) {
           alert("Could not import backup file.");
@@ -678,8 +861,22 @@
 
     function clearAllData() {
       if (!confirm("Clear all ledger data? This cannot be undone unless you exported a backup.")) return;
-      state.entries = [];
+
+      state = {
+        weeklyGoal: 20,
+        currentCourse: "Google IT",
+        currentModule: "Course 2 – Networking",
+        currentProgress: 0,
+        entries: [],
+        timer: {
+          isRunning: false,
+          startTime: null,
+          course: "Google IT"
+        }
+      };
+
       saveState();
+      stopTimerLoop();
       clearForm();
       renderAll();
     }
@@ -703,6 +900,13 @@
       e.target.value = "";
     });
 
+    document.getElementById("timerCourse").addEventListener("change", function(e) {
+      if (!state.timer.isRunning) {
+        state.timer.course = e.target.value;
+        saveState();
+      }
+    });
+
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("./sw.js").catch(() => {});
@@ -711,6 +915,10 @@
 
     clearForm();
     renderAll();
+
+    if (state.timer && state.timer.isRunning) {
+      startTimerLoop();
+    }
   </script>
 </body>
 </html>
