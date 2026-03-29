@@ -754,7 +754,7 @@
   <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("/Study-ledger/service-worker.js")
+      navigator.serviceWorker.register("./service-worker.js")
         .then(() => console.log("Service Worker Registered"))
         .catch(err => console.error("SW failed:", err));
     });
