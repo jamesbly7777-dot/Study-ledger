@@ -1,9 +1,10 @@
-const STORAGE_KEY = "atlas-study-tracker-data-v1";
+const STORAGE_KEY = "atlas-study-tracker-state-v1";
 const THEME_KEY = "atlas-study-theme-v1";
 
-let deferredInstallPrompt = null;
+let deferredPrompt = null;
+let hoursChart = null;
 
-let state = {
+const state = {
   sessions: [],
   dailyGoal: 2,
   timer: {
@@ -11,12 +12,12 @@ let state = {
     paused: false,
     startTime: null,
     elapsedMs: 0,
-    intervalId: null
+    intervalId: null,
   },
   firebaseReady: false,
   user: null,
   db: null,
-  auth: null
+  auth: null,
 };
 
 const el = {
@@ -35,7 +36,6 @@ const el = {
   sessionCount: document.getElementById("sessionCount"),
   hoursChart: document.getElementById("hoursChart"),
   exportBtn: document.getElementById("exportBtn"),
-  importBtn: document.getElementById("importBtn"),
   importFile: document.getElementById("importFile"),
   clearBtn: document.getElementById("clearBtn"),
   seedBtn: document.getElementById("seedBtn"),
@@ -54,29 +54,48 @@ const el = {
   startBtn: document.getElementById("startBtn"),
   pauseBtn: document.getElementById("pauseBtn"),
   stopBtn: document.getElementById("stopBtn"),
-  toast: document.getElementById("toast")
+  toast: document.getElementById("toast"),
 };
 
-function showToast(message) {
-  if (!el.toast) return;
-  el.toast.textContent = message;
-  el.toast.classList.add("show");
-  clearTimeout(showToast._timeout);
-  showToast._timeout = setTimeout(() => {
-    el.toast.classList.remove("show");
-  }, 2600);
+function ensureInstallButton() {
+  if (!el.installBtn) {
+    const btn = document.createElement("button");
+    btn.id = "installBtn";
+    btn.textContent = "Install App";
+    btn.style.position = "fixed";
+    btn.style.left = "20px";
+    btn.style.right = "20px";
+    btn.style.bottom = "20px";
+    btn.style.padding = "14px";
+    btn.style.fontSize = "16px";
+    btn.style.borderRadius = "12px";
+    btn.style.border = "none";
+    btn.style.color = "white";
+    btn.style.background = "linear-gradient(135deg,#4CAF50,#2ecc71)";
+    btn.style.zIndex = "9999";
+    btn.style.display = "none";
+    btn.style.boxShadow = "0 10px 30px rgba(0,0,0,.25)";
+    document.body.appendChild(btn);
+    el.installBtn = btn;
+  }
 }
 
-function clampFocus(value) {
-  const num = Number(value);
-  if (!Number.isFinite(num)) return "";
-  return Math.min(5, Math.max(1, Math.round(num)));
+function showToast(message) {
+  if (!el.toast) {
+    console.log(message);
+    return;
+  }
+  el.toast.textContent = message;
+  el.toast.classList.add("show");
+  setTimeout(() => {
+    el.toast.classList.remove("show");
+  }, 2200);
 }
 
 function saveLocalState() {
   const payload = {
     sessions: state.sessions,
-    dailyGoal: state.dailyGoal
+    dailyGoal: state.dailyGoal,
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
@@ -87,82 +106,87 @@ function loadLocalState() {
     if (!raw) return;
     const parsed = JSON.parse(raw);
     state.sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
-    state.dailyGoal = Number.isFinite(parsed.dailyGoal) ? parsed.dailyGoal : 2;
+    state.dailyGoal =
+      typeof parsed.dailyGoal === "number" && parsed.dailyGoal > 0
+        ? parsed.dailyGoal
+        : 2;
   } catch (err) {
-    console.error(err);
+    console.error("Failed to load local state:", err);
   }
 }
 
 function formatDuration(ms) {
   const totalSeconds = Math.floor(ms / 1000);
-  const hh = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
-  const mm = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
-  const ss = String(totalSeconds % 60).padStart(2, "0");
-  return `${hh}:${mm}:${ss}`;
+  const hrs = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+  const mins = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+  const secs = String(totalSeconds % 60).padStart(2, "0");
+  return `${hrs}:${mins}:${secs}`;
 }
 
-function hoursFromMs(ms) {
-  return ms / 3600000;
+function decimalHours(ms) {
+  return +(ms / 3600000).toFixed(2);
 }
 
-function formatHours(num) {
-  return `${num.toFixed(2)}h`;
+function nowIso() {
+  return new Date().toISOString();
 }
 
-function toDateKey(dateInput) {
-  const d = new Date(dateInput);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function parseDate(value) {
+  return new Date(value);
 }
 
-function todayKey() {
-  return toDateKey(new Date());
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
-function getLast7Days() {
-  const days = [];
-  const now = new Date();
-  for (let i = 6; i >= 0; i -= 1) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i);
-    days.push(d);
-  }
-  return days;
+function startOfWeek() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  d.setDate(d.getDate() - diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
-function computeDailyTotals() {
-  const map = new Map();
-  for (const session of state.sessions) {
-    const key = toDateKey(session.createdAt);
-    map.set(key, (map.get(key) || 0) + session.durationMs);
-  }
-  return map;
+function sameDay(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
 function getTodayHours() {
-  const total = computeDailyTotals().get(todayKey()) || 0;
-  return hoursFromMs(total);
+  const start = startOfToday();
+  return state.sessions
+    .filter((s) => parseDate(s.startedAt) >= start)
+    .reduce((sum, s) => sum + (s.hours || 0), 0);
 }
 
 function getWeekHours() {
-  const totals = computeDailyTotals();
-  return getLast7Days().reduce((sum, d) => {
-    const key = toDateKey(d);
-    return sum + hoursFromMs(totals.get(key) || 0);
-  }, 0);
+  const start = startOfWeek();
+  return state.sessions
+    .filter((s) => parseDate(s.startedAt) >= start)
+    .reduce((sum, s) => sum + (s.hours || 0), 0);
 }
 
-function getStreakCount() {
-  const totals = computeDailyTotals();
+function getStreak() {
+  const byDay = new Set(
+    state.sessions.map((s) => {
+      const d = parseDate(s.startedAt);
+      return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    })
+  );
+
   let streak = 0;
-  const d = new Date();
+  let d = new Date();
+  d.setHours(0, 0, 0, 0);
 
   while (true) {
-    const key = toDateKey(d);
-    const amount = totals.get(key) || 0;
-    if (amount > 0) {
+    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if (byDay.has(key)) {
       streak += 1;
       d.setDate(d.getDate() - 1);
     } else {
@@ -173,282 +197,296 @@ function getStreakCount() {
   return streak;
 }
 
-function renderChart() {
-  if (!el.hoursChart) return;
-
-  const totals = computeDailyTotals();
-  const last7 = getLast7Days();
-  const values = last7.map((d) => hoursFromMs(totals.get(toDateKey(d)) || 0));
-  const max = Math.max(...values, 0.25);
-
-  el.hoursChart.innerHTML = "";
-
-  last7.forEach((date, idx) => {
-    const value = values[idx];
-    const col = document.createElement("div");
-    col.className = "bar-col";
-
-    const valueLabel = document.createElement("div");
-    valueLabel.className = "bar-value";
-    valueLabel.textContent = value.toFixed(1);
-
-    const track = document.createElement("div");
-    track.className = "bar-track";
-
-    const bar = document.createElement("div");
-    bar.className = "bar";
-    bar.style.height = `${Math.max(8, (value / max) * 140)}px`;
-
-    const day = document.createElement("div");
-    day.className = "bar-label";
-    day.textContent = date.toLocaleDateString(undefined, { weekday: "short" });
-
-    track.appendChild(bar);
-    col.appendChild(valueLabel);
-    col.appendChild(track);
-    col.appendChild(day);
-    el.hoursChart.appendChild(col);
-  });
-}
-
-function renderStats() {
-  if (el.todayHours) el.todayHours.textContent = formatHours(getTodayHours());
-  if (el.weekHours) el.weekHours.textContent = formatHours(getWeekHours());
-  if (el.streakCount) el.streakCount.textContent = String(getStreakCount());
-  if (el.goalDisplay) el.goalDisplay.textContent = formatHours(state.dailyGoal);
-  if (el.dailyGoalInput) el.dailyGoalInput.value = state.dailyGoal;
-  if (el.sessionCount) {
-    el.sessionCount.textContent = `${state.sessions.length} ${state.sessions.length === 1 ? "session" : "sessions"}`;
+function renderTimer() {
+  if (el.timerDisplay) {
+    el.timerDisplay.textContent = formatDuration(getCurrentElapsedMs());
   }
-}
-
-function sessionHtml(session) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "session-item";
-
-  const head = document.createElement("div");
-  head.className = "session-head";
-
-  const left = document.createElement("div");
-  const title = document.createElement("h4");
-  title.className = "session-title";
-  title.textContent = session.title || "Untitled Session";
-
-  const meta = document.createElement("div");
-  meta.className = "session-meta";
-  meta.innerHTML = `
-    <div>${session.category || "General"}</div>
-    <div>${new Date(session.createdAt).toLocaleString()}</div>
-    <div>Focus: ${session.focus || "—"}</div>
-  `;
-
-  left.appendChild(title);
-  left.appendChild(meta);
-
-  const duration = document.createElement("div");
-  duration.className = "session-duration";
-  duration.textContent = formatHours(hoursFromMs(session.durationMs));
-
-  head.appendChild(left);
-  head.appendChild(duration);
-
-  wrapper.appendChild(head);
-
-  if (session.notes) {
-    const notes = document.createElement("div");
-    notes.className = "session-notes";
-    notes.textContent = session.notes;
-    wrapper.appendChild(notes);
-  }
-
-  const actions = document.createElement("div");
-  actions.className = "session-actions";
-
-  const deleteBtn = document.createElement("button");
-  deleteBtn.className = "small-btn delete";
-  deleteBtn.type = "button";
-  deleteBtn.textContent = "Delete";
-  deleteBtn.addEventListener("click", async () => {
-    state.sessions = state.sessions.filter((s) => s.id !== session.id);
-    saveLocalState();
-    renderAll();
-    showToast("Session deleted");
-
-    if (state.firebaseReady && state.user) {
-      await pushLocalToCloud();
+  if (el.timerStatus) {
+    if (state.timer.running) {
+      el.timerStatus.textContent = state.timer.paused ? "Paused" : "Running";
+    } else {
+      el.timerStatus.textContent = "Ready";
     }
-  });
+  }
+}
 
-  actions.appendChild(deleteBtn);
-  wrapper.appendChild(actions);
+function getCurrentElapsedMs() {
+  if (!state.timer.running || state.timer.paused || !state.timer.startTime) {
+    return state.timer.elapsedMs;
+  }
+  return state.timer.elapsedMs + (Date.now() - state.timer.startTime);
+}
 
-  return wrapper;
+function stopInterval() {
+  if (state.timer.intervalId) {
+    clearInterval(state.timer.intervalId);
+    state.timer.intervalId = null;
+  }
+}
+
+function beginTicking() {
+  stopInterval();
+  state.timer.intervalId = setInterval(renderTimer, 250);
+}
+
+function startTimer() {
+  if (state.timer.running && !state.timer.paused) return;
+
+  if (!state.timer.running) {
+    state.timer.running = true;
+    state.timer.paused = false;
+    state.timer.startTime = Date.now();
+    state.timer.elapsedMs = 0;
+  } else if (state.timer.paused) {
+    state.timer.paused = false;
+    state.timer.startTime = Date.now();
+  }
+
+  beginTicking();
+  renderTimer();
+  showToast("Timer started");
+}
+
+function pauseTimer() {
+  if (!state.timer.running || state.timer.paused) return;
+  state.timer.elapsedMs = getCurrentElapsedMs();
+  state.timer.paused = true;
+  state.timer.startTime = null;
+  stopInterval();
+  renderTimer();
+  showToast("Timer paused");
+}
+
+function resetTimerState() {
+  stopInterval();
+  state.timer.running = false;
+  state.timer.paused = false;
+  state.timer.startTime = null;
+  state.timer.elapsedMs = 0;
+  renderTimer();
+}
+
+function stopAndSaveTimer() {
+  const elapsedMs = getCurrentElapsedMs();
+  if (elapsedMs < 1000) {
+    resetTimerState();
+    showToast("Nothing to save");
+    return;
+  }
+
+  const title = el.studyTitle?.value?.trim() || "Study Session";
+  const category = el.studyCategory?.value?.trim() || "General";
+  const focusRaw = el.focusRating?.value?.trim() || "";
+  const notes = el.studyNotes?.value?.trim() || "";
+  const focus =
+    focusRaw === "" ? null : Math.max(1, Math.min(5, Number(focusRaw)));
+
+  const endedAt = new Date();
+  const startedAt = new Date(endedAt.getTime() - elapsedMs);
+
+  const session = {
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+    title,
+    category,
+    focus,
+    notes,
+    ms: elapsedMs,
+    hours: decimalHours(elapsedMs),
+    startedAt: startedAt.toISOString(),
+    endedAt: endedAt.toISOString(),
+  };
+
+  state.sessions.unshift(session);
+  saveLocalState();
+  resetTimerState();
+  clearInputs();
+  renderAll();
+  showToast("Session saved");
+}
+
+function clearInputs() {
+  if (el.studyTitle) el.studyTitle.value = "";
+  if (el.studyCategory) el.studyCategory.value = "";
+  if (el.focusRating) el.focusRating.value = "";
+  if (el.studyNotes) el.studyNotes.value = "";
+}
+
+function deleteSession(id) {
+  state.sessions = state.sessions.filter((s) => s.id !== id);
+  saveLocalState();
+  renderAll();
+  showToast("Session deleted");
 }
 
 function renderSessions() {
   if (!el.sessionList) return;
 
-  el.sessionList.innerHTML = "";
-
   if (!state.sessions.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty";
-    empty.textContent = "No sessions yet. Start your timer and save one.";
-    el.sessionList.appendChild(empty);
+    el.sessionList.innerHTML = `
+      <div class="empty-state">No sessions yet. Start your timer and save one.</div>
+    `;
     return;
   }
 
-  const sorted = [...state.sessions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  sorted.forEach((session) => {
-    el.sessionList.appendChild(sessionHtml(session));
+  el.sessionList.innerHTML = state.sessions
+    .slice(0, 20)
+    .map((s) => {
+      const d = new Date(s.startedAt);
+      return `
+        <div class="session-card">
+          <div class="session-top">
+            <div>
+              <div class="session-title">${escapeHtml(s.title)}</div>
+              <div class="session-meta">${escapeHtml(s.category)}</div>
+              <div class="session-date">${d.toLocaleString()}</div>
+            </div>
+            <div class="session-hours">${(s.hours || 0).toFixed(2)}h</div>
+          </div>
+          ${
+            s.notes
+              ? `<div class="session-notes">${escapeHtml(s.notes)}</div>`
+              : ""
+          }
+          <button class="delete-session-btn" data-id="${s.id}">Delete</button>
+        </div>
+      `;
+    })
+    .join("");
+
+  el.sessionList
+    .querySelectorAll(".delete-session-btn")
+    .forEach((btn) =>
+      btn.addEventListener("click", () => deleteSession(btn.dataset.id))
+    );
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (m) => {
+    const map = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    };
+    return map[m];
   });
 }
 
-function renderCloudStatus() {
-  if (!el.cloudStatus || !el.authText) return;
+function renderSnapshot() {
+  const today = getTodayHours();
+  const week = getWeekHours();
+  const streak = getStreak();
 
-  if (!state.firebaseReady) {
-    el.cloudStatus.textContent = "Local mode";
-    el.authText.textContent = "Firebase not configured yet. App works fully in local mode until you add your Firebase keys.";
-    return;
+  if (el.todayHours) el.todayHours.textContent = `${today.toFixed(2)}h`;
+  if (el.weekHours) el.weekHours.textContent = `${week.toFixed(2)}h`;
+  if (el.streakCount) el.streakCount.textContent = String(streak);
+  if (el.goalDisplay) el.goalDisplay.textContent = `${state.dailyGoal.toFixed(2)}h`;
+  if (el.dailyGoalInput) el.dailyGoalInput.value = String(state.dailyGoal);
+  if (el.sessionCount) {
+    el.sessionCount.textContent = `${state.sessions.length} session${
+      state.sessions.length === 1 ? "" : "s"
+    }`;
+  }
+}
+
+function renderChart() {
+  if (!el.hoursChart || typeof Chart === "undefined") return;
+
+  const labels = [];
+  const values = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (let i = 6; i >= 0; i -= 1) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+    const total = state.sessions
+      .filter((s) => sameDay(parseDate(s.startedAt), d))
+      .reduce((sum, s) => sum + (s.hours || 0), 0);
+    values.push(+total.toFixed(2));
   }
 
-  if (state.user) {
-    el.cloudStatus.textContent = "Cloud ready";
-    el.authText.textContent = `Logged in as ${state.user.email}`;
-  } else {
-    el.cloudStatus.textContent = "Firebase ready";
-    el.authText.textContent = "Firebase ready. Login to sync your sessions.";
+  if (hoursChart) {
+    hoursChart.destroy();
   }
+
+  hoursChart = new Chart(el.hoursChart, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Hours",
+          data: values,
+          borderRadius: 8,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+        },
+      },
+    },
+  });
 }
 
 function renderAll() {
-  if (el.timerDisplay) el.timerDisplay.textContent = formatDuration(state.timer.elapsedMs);
-  renderStats();
-  renderChart();
+  renderTimer();
+  renderSnapshot();
   renderSessions();
-  renderCloudStatus();
+  renderChart();
+  updateCloudStatus();
 }
 
-function startTimer() {
-  if (state.timer.running) return;
-
-  state.timer.running = true;
-  state.timer.paused = false;
-  state.timer.startTime = Date.now() - state.timer.elapsedMs;
-
-  state.timer.intervalId = setInterval(() => {
-    state.timer.elapsedMs = Date.now() - state.timer.startTime;
-    if (el.timerDisplay) el.timerDisplay.textContent = formatDuration(state.timer.elapsedMs);
-  }, 250);
-
-  if (el.timerStatus) el.timerStatus.textContent = "Running";
-}
-
-function pauseTimer() {
-  if (!state.timer.running) return;
-
-  clearInterval(state.timer.intervalId);
-  state.timer.intervalId = null;
-  state.timer.running = false;
-  state.timer.paused = true;
-  state.timer.elapsedMs = Date.now() - state.timer.startTime;
-
-  if (el.timerStatus) el.timerStatus.textContent = "Paused";
-  if (el.timerDisplay) el.timerDisplay.textContent = formatDuration(state.timer.elapsedMs);
-}
-
-function resetTimer() {
-  clearInterval(state.timer.intervalId);
-  state.timer.intervalId = null;
-  state.timer.running = false;
-  state.timer.paused = false;
-  state.timer.startTime = null;
-  state.timer.elapsedMs = 0;
-
-  if (el.timerDisplay) el.timerDisplay.textContent = "00:00:00";
-  if (el.timerStatus) el.timerStatus.textContent = "Ready";
-}
-
-async function stopAndSaveSession() {
-  let finalMs = state.timer.elapsedMs;
-
-  if (state.timer.running) {
-    finalMs = Date.now() - state.timer.startTime;
-  }
-
-  clearInterval(state.timer.intervalId);
-  state.timer.intervalId = null;
-  state.timer.running = false;
-  state.timer.paused = false;
-
-  if (finalMs < 1000) {
-    showToast("Run the timer a bit longer before saving.");
-    resetTimer();
-    return;
-  }
-
-  const title = el.studyTitle ? el.studyTitle.value.trim() : "";
-  const category = el.studyCategory ? el.studyCategory.value.trim() : "";
-  const focus = clampFocus(el.focusRating ? el.focusRating.value : "");
-  const notes = el.studyNotes ? el.studyNotes.value.trim() : "";
-
-  const session = {
-    id: crypto.randomUUID(),
-    title: title || "Untitled Session",
-    category: category || "General",
-    focus: focus || "",
-    notes,
-    durationMs: finalMs,
-    createdAt: new Date().toISOString()
-  };
-
-  state.sessions.push(session);
+function saveGoal() {
+  const value = Number(el.dailyGoalInput?.value || state.dailyGoal);
+  state.dailyGoal = value > 0 ? value : 2;
   saveLocalState();
-  renderAll();
-  showToast("Session saved");
-
-  if (el.studyTitle) el.studyTitle.value = "";
-  if (el.studyCategory) el.studyCategory.value = "";
-  if (el.focusRating) el.focusRating.value = "";
-  if (el.studyNotes) el.studyNotes.value = "";
-
-  if (state.firebaseReady && state.user) {
-    await pushLocalToCloud();
-  }
-
-  resetTimer();
+  renderSnapshot();
+  showToast("Goal saved");
 }
 
 function exportJson() {
-  const blob = new Blob([JSON.stringify({
+  const payload = {
     sessions: state.sessions,
-    dailyGoal: state.dailyGoal
-  }, null, 2)], { type: "application/json" });
-
+    dailyGoal: state.dailyGoal,
+    exportedAt: nowIso(),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `atlas-study-backup-${todayKey()}.json`;
+  a.download = "atlas-study-tracker-backup.json";
   a.click();
   URL.revokeObjectURL(url);
-  showToast("Exported JSON");
+  showToast("Exported JSON backup");
 }
 
-function importJsonFile(file) {
+function importJson(file) {
+  if (!file) return;
   const reader = new FileReader();
-  reader.onload = async (e) => {
+  reader.onload = () => {
     try {
-      const parsed = JSON.parse(e.target.result);
+      const parsed = JSON.parse(String(reader.result));
       state.sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
-      state.dailyGoal = Number.isFinite(parsed.dailyGoal) ? parsed.dailyGoal : 2;
+      state.dailyGoal =
+        typeof parsed.dailyGoal === "number" && parsed.dailyGoal > 0
+          ? parsed.dailyGoal
+          : 2;
       saveLocalState();
       renderAll();
-      showToast("Imported JSON");
-
-      if (state.firebaseReady && state.user) {
-        await pushLocalToCloud();
-      }
+      showToast("Imported backup");
     } catch (err) {
       console.error(err);
       showToast("Import failed");
@@ -457,9 +495,10 @@ function importJsonFile(file) {
   reader.readAsText(file);
 }
 
-async function clearAllLocalData() {
-  if (!confirm("Clear all local data?")) return;
+function clearAllData() {
+  if (!confirm("Clear all local sessions and reset the app?")) return;
   state.sessions = [];
+  state.dailyGoal = 2;
   saveLocalState();
   renderAll();
   showToast("Local data cleared");
@@ -467,40 +506,33 @@ async function clearAllLocalData() {
 
 function addDemoData() {
   const now = new Date();
-  const demo = [];
-
-  for (let i = 0; i < 5; i += 1) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i);
-
-    demo.push({
-      id: crypto.randomUUID(),
-      title: `Demo Session ${i + 1}`,
-      category: i % 2 === 0 ? "Google IT" : "Codecademy",
-      focus: String(5 - (i % 3)),
-      notes: "Sample session for UI testing.",
-      durationMs: (25 + i * 10) * 60000,
-      createdAt: d.toISOString()
-    });
-  }
-
-  state.sessions = [...demo, ...state.sessions];
+  state.sessions = [
+    {
+      id: "demo-1",
+      title: "Google IT Networking",
+      category: "Google IT",
+      focus: 4,
+      notes: "Reviewed TCP vs UDP",
+      ms: 5400000,
+      hours: 1.5,
+      startedAt: new Date(now.getTime() - 86400000).toISOString(),
+      endedAt: new Date(now.getTime() - 32400000).toISOString(),
+    },
+    {
+      id: "demo-2",
+      title: "Cybersecurity Notes",
+      category: "Codecademy",
+      focus: 5,
+      notes: "Encryption and basic cryptography",
+      ms: 2700000,
+      hours: 0.75,
+      startedAt: now.toISOString(),
+      endedAt: new Date(now.getTime() + 2700000).toISOString(),
+    },
+  ];
   saveLocalState();
   renderAll();
   showToast("Demo data added");
-}
-
-function saveGoal() {
-  const value = parseFloat(el.dailyGoalInput ? el.dailyGoalInput.value : "");
-  if (!Number.isFinite(value) || value < 0) {
-    showToast("Enter a valid goal");
-    return;
-  }
-
-  state.dailyGoal = value;
-  saveLocalState();
-  renderAll();
-  showToast("Goal saved");
 }
 
 async function enableNotifications() {
@@ -515,9 +547,9 @@ async function enableNotifications() {
   } else {
     showToast("Notifications not enabled");
   }
+}
 
-
-  function applyTheme(theme) {
+function applyTheme(theme) {
   if (theme === "light") {
     document.body.classList.add("light");
     if (el.themeBtn) el.themeBtn.textContent = "☀️";
@@ -525,9 +557,209 @@ async function enableNotifications() {
     document.body.classList.remove("light");
     if (el.themeBtn) el.themeBtn.textContent = "🌙";
   }
+  localStorage.setItem(THEME_KEY, theme);
 }
 
 function initTheme() {
-  const saved = localStorage.getItem("theme") || "dark";
+  const saved = localStorage.getItem(THEME_KEY) || "dark";
   applyTheme(saved);
 }
+
+function toggleTheme() {
+  const isLight = document.body.classList.contains("light");
+  applyTheme(isLight ? "dark" : "light");
+}
+
+function initFirebase() {
+  try {
+    if (
+      typeof firebase === "undefined" ||
+      !window.FIREBASE_CONFIG ||
+      !firebase.apps
+    ) {
+      updateCloudStatus("Firebase ready. Login to sync your sessions.");
+      return;
+    }
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(window.FIREBASE_CONFIG);
+    }
+
+    state.auth = firebase.auth();
+    state.db = firebase.firestore();
+    state.firebaseReady = true;
+
+    state.auth.onAuthStateChanged((user) => {
+      state.user = user || null;
+      updateCloudStatus();
+      if (el.authText) {
+        el.authText.textContent = user
+          ? `Logged in as ${user.email}`
+          : "Not logged in";
+      }
+    });
+  } catch (err) {
+    console.error("Firebase init failed:", err);
+    updateCloudStatus("Firebase setup failed");
+  }
+}
+
+function updateCloudStatus(message) {
+  if (!el.cloudStatus) return;
+
+  if (message) {
+    el.cloudStatus.textContent = message;
+    return;
+  }
+
+  if (!state.firebaseReady) {
+    el.cloudStatus.textContent = "Firebase ready. Login to sync your sessions.";
+  } else if (state.user) {
+    el.cloudStatus.textContent = `Cloud connected: ${state.user.email}`;
+  } else {
+    el.cloudStatus.textContent = "Firebase ready. Login to sync your sessions.";
+  }
+}
+
+async function signUp() {
+  if (!state.auth) {
+    showToast("Firebase auth not ready");
+    return;
+  }
+  const email = el.emailInput?.value?.trim();
+  const password = el.passwordInput?.value?.trim();
+  if (!email || !password) {
+    showToast("Enter email and password");
+    return;
+  }
+  try {
+    await state.auth.createUserWithEmailAndPassword(email, password);
+    showToast("Account created");
+  } catch (err) {
+    console.error(err);
+    showToast(err.message || "Signup failed");
+  }
+}
+
+async function login() {
+  if (!state.auth) {
+    showToast("Firebase auth not ready");
+    return;
+  }
+  const email = el.emailInput?.value?.trim();
+  const password = el.passwordInput?.value?.trim();
+  if (!email || !password) {
+    showToast("Enter email and password");
+    return;
+  }
+  try {
+    await state.auth.signInWithEmailAndPassword(email, password);
+    showToast("Logged in");
+  } catch (err) {
+    console.error(err);
+    showToast(err.message || "Login failed");
+  }
+}
+
+async function logout() {
+  if (!state.auth) return;
+  try {
+    await state.auth.signOut();
+    showToast("Logged out");
+  } catch (err) {
+    console.error(err);
+    showToast("Logout failed");
+  }
+}
+
+async function pushLocalToCloud() {
+  if (!state.db || !state.user) {
+    showToast("Login first to sync");
+    return;
+  }
+  try {
+    await state.db.collection("studySessions").doc(state.user.uid).set({
+      sessions: state.sessions,
+      dailyGoal: state.dailyGoal,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      email: state.user.email,
+    });
+    showToast("Synced to cloud");
+  } catch (err) {
+    console.error(err);
+    showToast("Cloud sync failed");
+  }
+}
+
+function bindEvents() {
+  el.startBtn?.addEventListener("click", startTimer);
+  el.pauseBtn?.addEventListener("click", pauseTimer);
+  el.stopBtn?.addEventListener("click", stopAndSaveTimer);
+  el.saveGoalBtn?.addEventListener("click", saveGoal);
+  el.exportBtn?.addEventListener("click", exportJson);
+  el.clearBtn?.addEventListener("click", clearAllData);
+  el.seedBtn?.addEventListener("click", addDemoData);
+  el.notifyBtn?.addEventListener("click", enableNotifications);
+  el.themeBtn?.addEventListener("click", toggleTheme);
+  el.signupBtn?.addEventListener("click", signUp);
+  el.loginBtn?.addEventListener("click", login);
+  el.logoutBtn?.addEventListener("click", logout);
+  el.syncBtn?.addEventListener("click", pushLocalToCloud);
+
+  el.importFile?.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (file) importJson(file);
+    e.target.value = "";
+  });
+}
+
+function initInstallPrompt() {
+  ensureInstallButton();
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (el.installBtn) {
+      el.installBtn.style.display = "block";
+    }
+  });
+
+  el.installBtn?.addEventListener("click", async () => {
+    if (!deferredPrompt) {
+      showToast("Install not available yet");
+      return;
+    }
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    el.installBtn.style.display = "none";
+  });
+
+  window.addEventListener("appinstalled", () => {
+    if (el.installBtn) el.installBtn.style.display = "none";
+    showToast("App installed");
+  });
+}
+
+function initServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  window.addEventListener("load", async () => {
+    try {
+      await navigator.serviceWorker.register("./service-worker.js");
+      console.log("Service worker registered");
+    } catch (err) {
+      console.error("Service worker failed:", err);
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  ensureInstallButton();
+  loadLocalState();
+  initTheme();
+  bindEvents();
+  initFirebase();
+  initInstallPrompt();
+  initServiceWorker();
+  renderAll();
+});
