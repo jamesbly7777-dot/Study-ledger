@@ -12,7 +12,8 @@
   <meta name="description" content="App-store style study tracker with timer, stats, streaks, export/import, offline support, and optional cloud sync." />
 
   <link rel="manifest" href="manifest.json" />
-
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
   <!-- Firebase compat SDKs -->
   <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -750,6 +751,17 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("/service-worker.js")
+        .then(() => console.log("Service Worker Registered"))
+        .catch(err => console.error("SW failed:", err));
+    });
+  }
+</script>
+
 <script defer src="app.js"></script>
 </body>
 </html>
