@@ -3,283 +3,239 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Study Ledger Pro</title>
+<title>Study Tracker Pro</title>
+
+<link rel="manifest" href="manifest.json">
 
 <style>
-:root {
-  --bg: #0f172a;
-  --card: #1e293b;
-  --accent: #3b82f6;
-  --green: #22c55e;
-  --red: #ef4444;
-  --text: #e2e8f0;
-}
+  body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: white;
+    display: flex;
+    justify-content: center;
+  }
 
-body {
-  margin: 0;
-  font-family: system-ui;
-  background: var(--bg);
-  color: var(--text);
-}
+  .app {
+    max-width: 420px;
+    width: 100%;
+    padding: 20px;
+  }
 
-.container {
-  padding: 16px;
-  max-width: 500px;
-  margin: auto;
-}
+  h1 {
+    text-align: center;
+    font-size: 22px;
+  }
 
-.card {
-  background: var(--card);
-  padding: 16px;
-  border-radius: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
+  .card {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 15px;
+    margin-top: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
 
-h2 { margin: 0 0 10px; }
+  button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 10px;
+    background: #22c55e;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
 
-button {
-  padding: 12px;
-  border: none;
-  border-radius: 10px;
-  font-weight: bold;
-  cursor: pointer;
-}
+  button.stop {
+    background: #ef4444;
+  }
 
-.btn-green { background: var(--green); color: white; }
-.btn-red { background: var(--red); color: white; }
-.btn-blue { background: var(--accent); color: white; }
+  input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    margin-top: 10px;
+  }
 
-.row {
-  display: flex;
-  gap: 10px;
-}
+  .timer {
+    font-size: 32px;
+    text-align: center;
+    margin-top: 10px;
+  }
 
-.row button { flex: 1; }
+  .stat {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
 
-.tabs {
-  display: flex;
-  gap: 5px;
-  margin-bottom: 10px;
-}
-
-.tabs button {
-  flex: 1;
-  background: #334155;
-}
-
-.active {
-  background: var(--accent) !important;
-}
-
-input, select {
-  width: 100%;
-  padding: 10px;
-  margin-top: 8px;
-  border-radius: 8px;
-  border: none;
-}
-
-.timer {
-  font-size: 32px;
-  text-align: center;
-  margin: 10px 0;
-}
-
-.entry {
-  background: #334155;
-  padding: 10px;
-  border-radius: 10px;
-  margin-top: 8px;
-}
+  canvas {
+    margin-top: 10px;
+    width: 100%;
+  }
 
 </style>
 </head>
 
 <body>
-<div class="container">
 
-<h2>📘 Study Ledger Pro</h2>
+<div class="app">
 
-<div class="tabs">
-  <button onclick="showTab('dash')" class="active">Dashboard</button>
-  <button onclick="showTab('ledger')">Ledger</button>
-  <button onclick="showTab('stats')">Stats</button>
-  <button onclick="showTab('settings')">Settings</button>
+<h1>📚 Study Tracker Pro</h1>
+
+<div class="card">
+  <div class="timer" id="timer">00:00:00</div>
+  <button onclick="startTimer()">Start</button>
+  <button class="stop" onclick="stopTimer()">Stop</button>
 </div>
 
-<!-- DASHBOARD -->
-<div id="dash">
-  <div class="card">
-    <h3>Timer</h3>
-    <select id="course">
-      <option>Google IT</option>
-      <option>Codecademy</option>
-    </select>
-
-    <div class="timer" id="timer">00:00:00</div>
-
-    <div class="row">
-      <button class="btn-green" onclick="start()">Start</button>
-      <button class="btn-red" onclick="stop()">Stop</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3>Quick Stats</h3>
-    <p>Week: <span id="week">0</span> hrs</p>
-    <p>Month: <span id="month">0</span> hrs</p>
-  </div>
+<div class="card">
+  <input id="subject" placeholder="What did you study?" />
+  <button onclick="saveSession()">Save Session</button>
 </div>
 
-<!-- LEDGER -->
-<div id="ledger" style="display:none">
-  <div class="card">
-    <h3>Add Manual Entry</h3>
-    <input type="number" id="manualHours" placeholder="Hours (e.g. 1.5)">
-    <button class="btn-blue" onclick="addManual()">Add</button>
-  </div>
-
-  <div id="entries"></div>
+<div class="card">
+  <div class="stat">🔥 Streak: <span id="streak">0</span></div>
+  <div class="stat">🎯 Daily Goal (hrs): <span id="goal">2</span></div>
+  <div class="stat">⏱ Today: <span id="today">0</span></div>
 </div>
 
-<!-- STATS -->
-<div id="stats" style="display:none">
-  <div class="card">
-    <h3>Stats</h3>
-    <p>Total Entries: <span id="totalEntries">0</span></p>
-    <p>Total Hours: <span id="totalHours">0</span></p>
-  </div>
+<div class="card">
+  <canvas id="chart"></canvas>
 </div>
 
-<!-- SETTINGS -->
-<div id="settings" style="display:none">
-  <div class="card">
-    <h3>Data</h3>
-    <button class="btn-blue" onclick="exportData()">Export</button>
-    <input type="file" onchange="importData(event)">
-  </div>
+<div class="card">
+  <button onclick="exportData()">Export Data</button>
+  <input type="file" onchange="importData(event)" />
 </div>
 
 </div>
 
 <script>
-let data = JSON.parse(localStorage.getItem("ledger")) || [];
 let startTime = null;
-let timerInterval = null;
+let interval;
 
-function save() {
-  localStorage.setItem("ledger", JSON.stringify(data));
-  render();
+function formatTime(ms) {
+  let totalSeconds = Math.floor(ms / 1000);
+  let hrs = String(Math.floor(totalSeconds / 3600)).padStart(2,'0');
+  let mins = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2,'0');
+  let secs = String(totalSeconds % 60).padStart(2,'0');
+  return `${hrs}:${mins}:${secs}`;
 }
 
-function showTab(tab) {
-  ["dash","ledger","stats","settings"].forEach(id=>{
-    document.getElementById(id).style.display = "none";
-  });
-  document.getElementById(tab).style.display = "block";
-
-  document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
-  event.target.classList.add("active");
-}
-
-function start() {
+function startTimer() {
   startTime = Date.now();
-  timerInterval = setInterval(updateTimer, 1000);
+  interval = setInterval(() => {
+    document.getElementById("timer").innerText =
+      formatTime(Date.now() - startTime);
+  }, 1000);
 }
 
-function stop() {
-  if (!startTime) return;
-  clearInterval(timerInterval);
+function stopTimer() {
+  clearInterval(interval);
+}
 
-  let diff = (Date.now() - startTime) / 3600000;
-  let course = document.getElementById("course").value;
+function saveSession() {
+  let subject = document.getElementById("subject").value;
+  let duration = Date.now() - startTime;
 
-  data.push({
-    course,
-    hours: diff,
+  let sessions = JSON.parse(localStorage.getItem("sessions") || "[]");
+
+  sessions.push({
+    subject,
+    duration,
     date: new Date().toISOString()
   });
 
-  startTime = null;
-  save();
+  localStorage.setItem("sessions", JSON.stringify(sessions));
+
+  updateStats();
+  drawChart();
 }
 
-function updateTimer() {
-  let diff = Date.now() - startTime;
-  let sec = Math.floor(diff / 1000);
-  let h = String(Math.floor(sec / 3600)).padStart(2,"0");
-  let m = String(Math.floor((sec % 3600)/60)).padStart(2,"0");
-  let s = String(sec % 60).padStart(2,"0");
+function updateStats() {
+  let sessions = JSON.parse(localStorage.getItem("sessions") || "[]");
 
-  document.getElementById("timer").innerText = `${h}:${m}:${s}`;
-}
+  let today = new Date().toDateString();
+  let todayTotal = 0;
 
-function addManual() {
-  let hours = parseFloat(document.getElementById("manualHours").value);
-  if (!hours) return;
-
-  data.push({
-    course: "Manual",
-    hours,
-    date: new Date().toISOString()
+  sessions.forEach(s => {
+    if (new Date(s.date).toDateString() === today) {
+      todayTotal += s.duration;
+    }
   });
 
-  save();
+  document.getElementById("today").innerText =
+    (todayTotal / 3600000).toFixed(2) + " hrs";
+
+  // streak logic
+  let streak = 0;
+  let day = new Date();
+
+  while (true) {
+    let found = sessions.some(s =>
+      new Date(s.date).toDateString() === day.toDateString()
+    );
+
+    if (found) {
+      streak++;
+      day.setDate(day.getDate() - 1);
+    } else break;
+  }
+
+  document.getElementById("streak").innerText = streak;
 }
 
-function render() {
-  let container = document.getElementById("entries");
-  container.innerHTML = "";
+function drawChart() {
+  let ctx = document.getElementById("chart").getContext("2d");
+  let sessions = JSON.parse(localStorage.getItem("sessions") || "[]");
 
-  let total = 0;
+  let data = {};
 
-  data.slice().reverse().forEach((e,i)=>{
-    total += e.hours;
-
-    let div = document.createElement("div");
-    div.className = "entry";
-    div.innerHTML = `
-      <strong>${e.course}</strong> - ${e.hours.toFixed(2)} hrs
-      <br>
-      <small>${new Date(e.date).toLocaleString()}</small>
-      <div class="row">
-        <button onclick="del(${data.length-1-i})">Delete</button>
-      </div>
-    `;
-    container.appendChild(div);
+  sessions.forEach(s => {
+    let day = new Date(s.date).toDateString();
+    data[day] = (data[day] || 0) + s.duration;
   });
 
-  document.getElementById("totalEntries").innerText = data.length;
-  document.getElementById("totalHours").innerText = total.toFixed(2);
-  document.getElementById("week").innerText = total.toFixed(2);
-  document.getElementById("month").innerText = total.toFixed(2);
-}
+  let labels = Object.keys(data).slice(-7);
+  let values = labels.map(d => data[d] / 3600000);
 
-function del(i) {
-  data.splice(i,1);
-  save();
+  ctx.clearRect(0,0,300,150);
+
+  labels.forEach((label, i) => {
+    ctx.fillRect(i * 40, 150 - values[i]*20, 30, values[i]*20);
+  });
 }
 
 function exportData() {
-  let blob = new Blob([JSON.stringify(data)], {type:"application/json"});
+  let data = localStorage.getItem("sessions");
+  let blob = new Blob([data], { type: "application/json" });
   let a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "ledger.json";
+  a.download = "study-data.json";
   a.click();
 }
 
 function importData(e) {
   let file = e.target.files[0];
   let reader = new FileReader();
-  reader.onload = () => {
-    data = JSON.parse(reader.result);
-    save();
+
+  reader.onload = function() {
+    localStorage.setItem("sessions", reader.result);
+    updateStats();
+    drawChart();
   };
+
   reader.readAsText(file);
 }
 
-render();
+updateStats();
+drawChart();
 </script>
+
 </body>
 </html>
