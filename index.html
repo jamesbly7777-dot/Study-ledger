@@ -439,34 +439,145 @@
       transform:translateX(-50%) translateY(0);
     }
 
-    @media (max-width: 860px){
+    @media (max-width: 1100px){
       .grid{
         grid-template-columns: 1fr;
       }
     }
 
     @media (max-width: 640px){
+      body{
+        padding: 10px;
+      }
+
+      .shell{
+        gap: 12px;
+      }
+
       .mini-grid{
         grid-template-columns: repeat(2, 1fr);
       }
-      .controls{
+
+      .controls,
+      .split,
+      .tools{
         grid-template-columns: 1fr;
       }
-      .split, .tools{
-        grid-template-columns: 1fr;
-      }
-      .title-wrap h1{
-        font-size:1rem;
-      }
-      .logo{
-        width:42px;height:42px;border-radius:14px;
-      }
-      .top-actions{
-        width:100%;
-      }
+
       .topbar{
         align-items:flex-start;
         flex-direction:column;
+        gap:10px;
+        padding:4px 0;
+      }
+
+      .brand{
+        width:100%;
+        align-items:center;
+      }
+
+      .logo{
+        width:46px;
+        height:46px;
+        border-radius:14px;
+        flex-shrink:0;
+      }
+
+      .title-wrap h1{
+        font-size:1.15rem;
+      }
+
+      .title-wrap p{
+        font-size:.88rem;
+      }
+
+      .top-actions{
+        width:100%;
+        justify-content:flex-start;
+      }
+
+      .icon-btn{
+        width:44px;
+        height:44px;
+        border-radius:14px;
+      }
+
+      .card{
+        padding:14px;
+        border-radius:20px;
+      }
+
+      .hero h2{
+        font-size:1.15rem;
+        line-height:1.15;
+        margin:6px 0 4px;
+      }
+
+      .sub{
+        font-size:.92rem;
+        line-height:1.4;
+      }
+
+      .badge-row{
+        gap:6px;
+      }
+
+      .badge{
+        font-size:.75rem;
+        padding:7px 9px;
+      }
+
+      .timer{
+        font-size:3rem;
+        padding:14px 10px;
+        border-radius:18px;
+      }
+
+      .timer-status{
+        font-size:.95rem;
+      }
+
+      .input, .select{
+        padding:13px 12px;
+        font-size:16px;
+      }
+
+      .btn{
+        padding:13px 14px;
+        border-radius:14px;
+        font-size:.95rem;
+      }
+
+      .stat{
+        padding:12px;
+        border-radius:16px;
+      }
+
+      .stat .label{
+        font-size:.72rem;
+      }
+
+      .stat .value{
+        font-size:1.15rem;
+      }
+
+      .session-item{
+        border-radius:16px;
+        padding:12px;
+      }
+
+      .canvas-wrap{
+        padding:10px;
+        border-radius:16px;
+      }
+
+      canvas{
+        height:210px;
+      }
+
+      .footer-note{
+        font-size:.8rem;
+        padding-bottom:8px;
       }
     }
   </style>
@@ -577,7 +688,7 @@
             <button class="btn secondary" id="loginBtn">Login</button>
           </div>
           <button class="btn secondary" id="logoutBtn">Logout</button>
-          <div class="hint" id="authText">Firebase not configured yet. App works fully in local mode until you add your Firebase keys.</div>
+          <div class="hint" id="authText">Firebase loading...</div>
         </div>
       </div>
     </div>
@@ -605,8 +716,7 @@
         </div>
         <div style="height:12px"></div>
         <div class="hint">
-          Export is your backup. Import restores your sessions.  
-          Clear All wipes local data only unless you manually sync again.
+          Export is your backup. Import restores your sessions. Clear All wipes local data only unless you manually sync again.
         </div>
       </div>
     </div>
@@ -626,14 +736,19 @@
 
   <div class="toast" id="toast"></div>
 
-<script>
-window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyB5MYbLAK-51RgeoP6zoY...", 
-  authDomain: "study-ledger-app.firebaseapp.com",
-  projectId: "study-ledger-app",
-  storageBucket: "study-ledger-app.appspot.com",
-  messagingSenderId: "815322107048",
-  appId: "1:815322107048:web:59c09e7d6cd696205a469d",
-  measurementId: "G-QD71MVP9H9"
-};
-</script>
+  <script>
+    window.FIREBASE_CONFIG = {
+      apiKey: "AIzaSyB5MYblAK-51RgeoP6zOyPSETUP2ILRbow",
+      authDomain: "study-ledger-app.firebaseapp.com",
+      projectId: "study-ledger-app",
+      storageBucket: "study-ledger-app.appspot.com",
+      messagingSenderId: "815322107048",
+      appId: "1:815322107048:web:59c09e7d6cd696205a469d",
+      measurementId: "G-QD71MVP9H9"
+    };
+  </script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script defer src="app.js"></script>
+</body>
+</html>
