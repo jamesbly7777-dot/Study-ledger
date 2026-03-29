@@ -1,14 +1,15 @@
-const CACHE_NAME = "atlas-study-tracker-cache-v1";
-const URLS_TO_CACHE = [
-  "./",
-  "./index.html",
-  "./app.js",
-  "./manifest.json"
+const CACHE_NAME = "atlas-study-tracker-v3";
+const APP_SHELL = [
+  "/Study-ledger/",
+  "/Study-ledger/index.html",
+  "/Study-ledger/app.js",
+  "/Study-ledger/manifest.json",
+  "/Study-ledger/icon.png"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(URLS_TO_CACHE))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
   );
   self.skipWaiting();
 });
@@ -29,14 +30,23 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  const { request } = event;
+
+  if (request.method !== "GET") return;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return (
-        cached ||
-        fetch(event.request).catch(() => {
-          return caches.match("./index.html");
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+
+      return fetch(request)
+        .then((response) => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseClone);
+          });
+          return response;
         })
-      );
+        .catch(() => caches.match("/Study-ledger/index.html"));
     })
   );
 });
