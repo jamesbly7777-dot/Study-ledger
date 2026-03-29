@@ -1,4 +1,4 @@
-const CACHE_NAME = "atlas-study-cache-v1";
+Iconst CACHE_NAME = "atlas-study-cache-v2";
 const urlsToCache = [
   "/Study-ledger/",
   "/Study-ledger/index.html",
