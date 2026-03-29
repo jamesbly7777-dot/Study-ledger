@@ -1,932 +1,285 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Study Ledger</title>
-  <meta name="theme-color" content="#07101f" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="icon.png" />
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #07101f;
-      color: #fff;
-      padding: 16px;
-    }
-    .wrap {
-      max-width: 560px;
-      margin: 0 auto;
-    }
-    .card {
-  width: 100%;
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Study Ledger Pro</title>
+
+<style>
+:root {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --accent: #3b82f6;
+  --green: #22c55e;
+  --red: #ef4444;
+  --text: #e2e8f0;
 }
+
+body {
+  margin: 0;
+  font-family: system-ui;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.container {
+  padding: 16px;
+  max-width: 500px;
+  margin: auto;
+}
+
+.card {
+  background: var(--card);
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+h2 { margin: 0 0 10px; }
 
 button {
-  width: 100%;
-  font-size: 16px;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
 }
-    .hero {
-      background: linear-gradient(180deg, #2d5bdb, #183a9c);
-      border-radius: 24px;
-      padding: 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 12px 30px rgba(0,0,0,.25);
-    }
-    .hero .small {
-      font-size: 12px;
-      letter-spacing: 2px;
-      color: #dbe7ff;
-      margin-bottom: 8px;
-    }
-    .hero h1 {
-      margin: 0 0 10px 0;
-      font-size: 34px;
-      line-height: 1.05;
-    }
-    .hero .sub {
-      color: #dbe7ff;
-      font-size: 16px;
-      margin-top: 8px;
-    }
-    .card {
-      background: #0d1730;
-      border: 1px solid #1b2a4e;
-      border-radius: 22px;
-      padding: 16px;
-      margin-bottom: 14px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .stat-title {
-      color: #9fb3df;
-      font-size: 14px;
-      margin-bottom: 8px;
-    }
-    .stat-value {
-      font-size: 34px;
-      font-weight: 700;
-    }
-    .blue { color: #78b5ff; }
-    .violet { color: #c8a5ff; }
-    .amber { color: #ffd36d; }
-    .cyan { color: #8ddfff; }
-    .green { color: #7df0a8; }
-    .red { color: #ff9f9f; }
 
-    .tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-    .tab-btn {
-      background: #0d1730;
-      border: 1px solid #26428e;
-      color: white;
-      border-radius: 18px;
-      padding: 14px 10px;
-      font-size: 16px;
-    }
-    .tab-btn.active {
-      background: #17367d;
-      box-shadow: inset 0 0 0 1px #4c82ff;
-    }
+.btn-green { background: var(--green); color: white; }
+.btn-red { background: var(--red); color: white; }
+.btn-blue { background: var(--accent); color: white; }
 
-    .panel { display: none; }
-    .panel.active { display: block; }
+.row {
+  display: flex;
+  gap: 10px;
+}
 
-    input, select, textarea, button {
-      width: 100%;
-      border-radius: 16px;
-      border: 1px solid #31466f;
-      font-size: 18px;
-      padding: 14px;
-      margin-bottom: 12px;
-    }
-    input, select, textarea {
-      background: #eef2ff;
-      color: #111;
-    }
-    button.primary {
-      background: #4280ea;
-      color: white;
-      border: none;
-    }
-    button.secondary {
-      background: #132242;
-      color: white;
-      border: none;
-    }
-    button.danger {
-      background: #8b1e2d;
-      color: white;
-      border: none;
-    }
-    button.success {
-      background: #1d8f5a;
-      color: white;
-      border: none;
-    }
+.row button { flex: 1; }
 
-    .progress-wrap {
-      background: #081228;
-      border-radius: 999px;
-      height: 16px;
-      overflow: hidden;
-      margin-top: 10px;
-    }
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background: #4b89ff;
-      transition: width .25s ease;
-    }
+.tabs {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 10px;
+}
 
-    .entry {
-      background: #091224;
-      border: 1px solid #1b2a4e;
-      border-radius: 18px;
-      padding: 14px;
-      margin-top: 12px;
-    }
-    .entry-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: flex-start;
-    }
-    .entry-course {
-      font-weight: 700;
-      font-size: 19px;
-    }
-    .entry-hours {
-      color: #78b5ff;
-      font-weight: 700;
-      font-size: 22px;
-      white-space: nowrap;
-    }
-    .entry-notes {
-      color: #a8b7d8;
-      margin-top: 6px;
-      font-size: 14px;
-    }
-    .entry-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    .entry-actions button {
-      margin: 0;
-      padding: 10px;
-      font-size: 14px;
-    }
+.tabs button {
+  flex: 1;
+  background: #334155;
+}
 
-    .day-block {
-      margin-bottom: 14px;
-    }
-    .day-title {
-      font-size: 28px;
-      letter-spacing: 2px;
-      margin: 18px 0 12px;
-    }
-    .day-total {
-      color: #c8a5ff;
-      font-weight: 700;
-      margin-top: 10px;
-      font-size: 18px;
-    }
+.active {
+  background: var(--accent) !important;
+}
 
-    .muted {
-      color: #9fb3df;
-      font-size: 14px;
-    }
+input, select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 8px;
+  border: none;
+}
 
-    .backup-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
+.timer {
+  font-size: 32px;
+  text-align: center;
+  margin: 10px 0;
+}
 
-    .summary-box {
-      background: #091224;
-      border: 1px solid #1b2a4e;
-      border-radius: 18px;
-      padding: 14px;
-      margin-top: 12px;
-    }
+.entry {
+  background: #334155;
+  padding: 10px;
+  border-radius: 10px;
+  margin-top: 8px;
+}
 
-    .footer-space {
-      height: 24px;
-    }
-
-    .small-note {
-      font-size: 13px;
-      color: #a8b7d8;
-      line-height: 1.4;
-    }
-
-    .timer-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .timer-value {
-      font-size: 40px;
-      font-weight: 700;
-      text-align: center;
-      color: #78b5ff;
-      margin: 10px 0 4px;
-    }
-
-    .timer-status {
-      text-align: center;
-      font-size: 15px;
-      color: #9fb3df;
-      margin-bottom: 14px;
-    }
-
-    .pill {
-      display: inline-block;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: #132242;
-      color: #dbe7ff;
-      font-size: 13px;
-      margin-top: 6px;
-    }
-  </style>
+</style>
 </head>
+
 <body>
-  <div class="wrap">
-    <div class="hero">
-      <div class="small">LEDGER VERSION + TIMER</div>
-      <h1>📘 Study Ledger</h1>
-      <div class="sub" id="weekLabel">Week: Mon --/--/---- → Sun --/--/----</div>
-      <div class="sub" id="monthLabel">Month: ----</div>
-      <div class="sub">Entry-based tracking • backup enabled • timer added</div>
+<div class="container">
+
+<h2>📘 Study Ledger Pro</h2>
+
+<div class="tabs">
+  <button onclick="showTab('dash')" class="active">Dashboard</button>
+  <button onclick="showTab('ledger')">Ledger</button>
+  <button onclick="showTab('stats')">Stats</button>
+  <button onclick="showTab('settings')">Settings</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dash">
+  <div class="card">
+    <h3>Timer</h3>
+    <select id="course">
+      <option>Google IT</option>
+      <option>Codecademy</option>
+    </select>
+
+    <div class="timer" id="timer">00:00:00</div>
+
+    <div class="row">
+      <button class="btn-green" onclick="start()">Start</button>
+      <button class="btn-red" onclick="stop()">Stop</button>
     </div>
-
-    <div class="card">
-      <div class="muted">Current course</div>
-      <div style="font-size:28px; font-weight:700;" id="currentCourseText">Google IT</div>
-      <div class="muted" id="currentModuleText">Course 2 – Networking</div>
-      <div style="margin-top:10px; display:flex; justify-content:space-between;">
-        <span class="muted">Progress</span>
-        <span class="blue" id="currentProgressText">0%</span>
-      </div>
-      <div class="progress-wrap">
-        <div class="progress-bar" id="courseProgressBar"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="muted">Study Timer</div>
-      <select id="timerCourse">
-        <option>Google IT</option>
-        <option>Codecademy</option>
-      </select>
-      <div class="timer-value" id="timerDisplay">00:00:00</div>
-      <div class="timer-status" id="timerStatus">No active session</div>
-      <div class="timer-grid">
-        <button class="success" onclick="startTimer()">Start Study</button>
-        <button class="danger" onclick="stopTimer()">Stop Study</button>
-      </div>
-      <div class="small-note">
-        Start saves the timestamp. Stop calculates the time automatically and adds it to your ledger.
-      </div>
-    </div>
-
-    <div class="grid">
-      <div class="card">
-        <div class="stat-title">Current week</div>
-        <div class="stat-value violet" id="weekTotal">0.00</div>
-      </div>
-      <div class="card">
-        <div class="stat-title">Current month</div>
-        <div class="stat-value green" id="monthTotal">0.00</div>
-      </div>
-      <div class="card">
-        <div class="stat-title">Google IT</div>
-        <div class="stat-value blue" id="googleTotal">0.00</div>
-      </div>
-      <div class="card">
-        <div class="stat-title">Codecademy</div>
-        <div class="stat-value cyan" id="codeTotal">0.00</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div style="display:flex; justify-content:space-between;">
-        <span class="muted">Weekly goal</span>
-        <span id="weeklyGoalText">20.00 hrs</span>
-      </div>
-      <div class="progress-wrap">
-        <div class="progress-bar" id="weeklyProgressBar"></div>
-      </div>
-      <div class="muted" style="text-align:right; margin-top:8px;" id="weeklyPercentText">0.0% complete</div>
-      <div class="muted" style="text-align:right; margin-top:6px;" id="remainingText">Remaining: 20.00 hrs</div>
-    </div>
-
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="ledger">Ledger</button>
-      <button class="tab-btn" data-tab="add">Add</button>
-      <button class="tab-btn" data-tab="stats">Stats</button>
-      <button class="tab-btn" data-tab="settings">Settings</button>
-    </div>
-
-    <div class="panel active" id="panel-ledger"></div>
-
-    <div class="panel" id="panel-add">
-      <div class="card">
-        <input type="date" id="date" />
-        <select id="course">
-          <option>Google IT</option>
-          <option>Codecademy</option>
-        </select>
-        <input type="number" step="0.01" id="hours" placeholder="Hours" />
-        <input type="number" min="1" max="5" id="focus" placeholder="Focus 1-5" value="4" />
-        <textarea id="notes" placeholder="Notes / module / concepts learned"></textarea>
-        <button class="primary" id="saveBtn">Add Entry</button>
-        <div class="small-note">Manual entry is still here as a backup option.</div>
-      </div>
-    </div>
-
-    <div class="panel" id="panel-stats">
-      <div class="card">
-        <div style="font-size:22px; font-weight:700; margin-bottom:10px;">Summary</div>
-
-        <div class="summary-box">
-          <div class="muted">All-time total</div>
-          <div class="stat-value violet" id="allTimeTotal">0.00</div>
-        </div>
-
-        <div class="summary-box">
-          <div class="muted">Entries logged</div>
-          <div class="stat-value blue" id="entryCount">0</div>
-        </div>
-
-        <div class="summary-box">
-          <div class="muted">This week</div>
-          <div class="stat-value amber" id="statsWeekTotal">0.00</div>
-        </div>
-
-        <div class="summary-box">
-          <div class="muted">This month</div>
-          <div class="stat-value green" id="statsMonthTotal">0.00</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel" id="panel-settings">
-      <div class="card">
-        <input id="currentCourse" placeholder="Current course" />
-        <input id="currentModule" placeholder="Current module" />
-        <input id="currentProgress" type="number" min="0" max="100" placeholder="Progress %" />
-        <input id="weeklyGoal" type="number" step="0.01" placeholder="Weekly goal" />
-        <button class="primary" onclick="saveSettings()">Save Settings</button>
-
-        <div class="backup-row">
-          <button class="secondary" onclick="exportBackup()">Export Backup</button>
-          <button class="secondary" onclick="document.getElementById('importFile').click()">Import Backup</button>
-        </div>
-
-        <input type="file" id="importFile" accept=".json,application/json" style="display:none;" />
-
-        <button class="danger" onclick="clearAllData()">Clear All Data</button>
-
-        <div class="small-note">
-          Export Backup saves all settings, entries, and timer state into one JSON file.<br>
-          Import Backup restores that file later.
-        </div>
-      </div>
-    </div>
-
-    <div class="footer-space"></div>
   </div>
 
-  <script>
-    const STORAGE_KEY = "study-ledger-final-v2";
-
-    let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
-      weeklyGoal: 20,
-      currentCourse: "Google IT",
-      currentModule: "Course 2 – Networking",
-      currentProgress: 0,
-      entries: [],
-      timer: {
-        isRunning: false,
-        startTime: null,
-        course: "Google IT"
-      }
-    };
-
-    let editingId = null;
-    let timerInterval = null;
-
-    function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }
-
-    function formatHours(n) {
-      return Number(n || 0).toFixed(2);
-    }
-
-    function todayDateString() {
-      return new Date().toISOString().slice(0, 10);
-    }
-
-    function prettyDate(dateString) {
-      const [y, m, d] = dateString.split("-");
-      return `${m}/${d}/${y}`;
-    }
-
-    function startOfWeek(dateString) {
-      const d = new Date(dateString + "T12:00:00");
-      const day = d.getDay();
-      const diff = day === 0 ? -6 : 1 - day;
-      d.setDate(d.getDate() + diff);
-      return d;
-    }
-
-    function endOfWeek(dateString) {
-      const start = startOfWeek(dateString);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      return end;
-    }
-
-    function fmtDateObj(d) {
-      return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${d.getFullYear()}`;
-    }
-
-    function currentWeekLabel() {
-      const today = todayDateString();
-      return `Week: Mon ${fmtDateObj(startOfWeek(today))} → Sun ${fmtDateObj(endOfWeek(today))}`;
-    }
-
-    function currentMonthLabel() {
-      const d = new Date();
-      return `Month: ${d.toLocaleString("en-US", { month: "long", year: "numeric" })}`;
-    }
-
-    function isSameWeek(dateString) {
-      const target = new Date(dateString + "T12:00:00");
-      const start = startOfWeek(todayDateString());
-      const end = endOfWeek(todayDateString());
-      return target >= start && target <= end;
-    }
-
-    function isSameMonth(dateString) {
-      const d = new Date(dateString + "T12:00:00");
-      const now = new Date();
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    }
-
-    function totals() {
-      let google = 0;
-      let code = 0;
-      let week = 0;
-      let month = 0;
-      let all = 0;
-
-      state.entries.forEach(e => {
-        const hrs = Number(e.hours) || 0;
-        all += hrs;
-        if (e.course === "Google IT") google += hrs;
-        if (e.course === "Codecademy") code += hrs;
-        if (isSameWeek(e.date)) week += hrs;
-        if (isSameMonth(e.date)) month += hrs;
-      });
-
-      const remaining = Math.max(state.weeklyGoal - week, 0);
-      const percent = state.weeklyGoal > 0 ? Math.min((week / state.weeklyGoal) * 100, 100) : 0;
-
-      return { google, code, week, month, all, remaining, percent };
-    }
-
-    function renderTop() {
-      const t = totals();
-
-      document.getElementById("weekLabel").textContent = currentWeekLabel();
-      document.getElementById("monthLabel").textContent = currentMonthLabel();
-
-      document.getElementById("currentCourseText").textContent = state.currentCourse;
-      document.getElementById("currentModuleText").textContent = state.currentModule;
-      document.getElementById("currentProgressText").textContent = `${state.currentProgress}%`;
-      document.getElementById("courseProgressBar").style.width = `${state.currentProgress}%`;
-
-      document.getElementById("googleTotal").textContent = formatHours(t.google);
-      document.getElementById("codeTotal").textContent = formatHours(t.code);
-      document.getElementById("weekTotal").textContent = formatHours(t.week);
-      document.getElementById("monthTotal").textContent = formatHours(t.month);
-
-      document.getElementById("weeklyGoalText").textContent = `${formatHours(state.weeklyGoal)} hrs`;
-      document.getElementById("weeklyProgressBar").style.width = `${t.percent}%`;
-      document.getElementById("weeklyPercentText").textContent = `${t.percent.toFixed(1)}% complete`;
-      document.getElementById("remainingText").textContent = `Remaining: ${formatHours(t.remaining)} hrs`;
-
-      document.getElementById("allTimeTotal").textContent = formatHours(t.all);
-      document.getElementById("entryCount").textContent = state.entries.length;
-      document.getElementById("statsWeekTotal").textContent = formatHours(t.week);
-      document.getElementById("statsMonthTotal").textContent = formatHours(t.month);
-    }
-
-    function renderLedger() {
-      const wrap = document.getElementById("panel-ledger");
-      wrap.innerHTML = "";
-
-      const grouped = {};
-      [...state.entries]
-        .sort((a, b) => {
-          if (b.date !== a.date) return b.date.localeCompare(a.date);
-          return (b.createdAt || "").localeCompare(a.createdAt || "");
-        })
-        .forEach(entry => {
-          if (!grouped[entry.date]) grouped[entry.date] = [];
-          grouped[entry.date].push(entry);
-        });
-
-      const dates = Object.keys(grouped);
-
-      if (!dates.length) {
-        wrap.innerHTML = `<div class="card"><div style="font-size:18px;">No entries yet. Tap <b>Add</b> to log your first study block, or use the timer above.</div></div>`;
-        return;
-      }
-
-      dates.forEach(date => {
-        const items = grouped[date];
-        const block = document.createElement("div");
-        block.className = "day-block";
-
-        const dayTitle = document.createElement("div");
-        dayTitle.className = "day-title";
-        dayTitle.textContent = prettyDate(date);
-        block.appendChild(dayTitle);
-
-        let dayTotal = 0;
-
-        items.forEach(entry => {
-          dayTotal += Number(entry.hours) || 0;
-          const div = document.createElement("div");
-          div.className = "entry";
-
-          const timerBadge = entry.fromTimer ? `<div class="pill">⏱ Timer entry</div>` : "";
-
-          div.innerHTML = `
-            <div class="entry-top">
-              <div>
-                <div class="entry-course">${entry.course}</div>
-                <div class="entry-notes">${entry.notes || "No notes"}</div>
-                ${timerBadge}
-              </div>
-              <div class="entry-hours">${formatHours(entry.hours)} hrs</div>
-            </div>
-            <div class="entry-notes">Focus ${entry.focus || 4}/5</div>
-            <div class="entry-actions">
-              <button class="secondary" onclick="editEntry('${entry.id}')">Edit</button>
-              <button class="secondary" onclick="deleteEntry('${entry.id}')">Delete</button>
-            </div>
-          `;
-          block.appendChild(div);
-        });
-
-        const total = document.createElement("div");
-        total.className = "day-total";
-        total.textContent = `Day total: ${formatHours(dayTotal)} hrs`;
-        block.appendChild(total);
-
-        wrap.appendChild(block);
-      });
-    }
-
-    function renderSettings() {
-      document.getElementById("currentCourse").value = state.currentCourse;
-      document.getElementById("currentModule").value = state.currentModule;
-      document.getElementById("currentProgress").value = state.currentProgress;
-      document.getElementById("weeklyGoal").value = state.weeklyGoal;
-    }
-
-    function formatDuration(ms) {
-      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-      const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
-      const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
-      const seconds = String(totalSeconds % 60).padStart(2, "0");
-      return `${hours}:${minutes}:${seconds}`;
-    }
-
-    function renderTimer() {
-      const display = document.getElementById("timerDisplay");
-      const status = document.getElementById("timerStatus");
-      const timerCourse = document.getElementById("timerCourse");
-
-      if (!state.timer) {
-        state.timer = { isRunning: false, startTime: null, course: "Google IT" };
-      }
-
-      timerCourse.value = state.timer.course || "Google IT";
-
-      if (state.timer.isRunning && state.timer.startTime) {
-        const elapsed = Date.now() - new Date(state.timer.startTime).getTime();
-        display.textContent = formatDuration(elapsed);
-        status.textContent = `Running • ${state.timer.course} • Started ${new Date(state.timer.startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
-      } else {
-        display.textContent = "00:00:00";
-        status.textContent = "No active session";
-      }
-    }
-
-    function startTimerLoop() {
-      stopTimerLoop();
-      timerInterval = setInterval(renderTimer, 1000);
-    }
-
-    function stopTimerLoop() {
-      if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-      }
-    }
-
-    function startTimer() {
-      if (state.timer.isRunning) {
-        alert("A study session is already running.");
-        return;
-      }
-
-      const selectedCourse = document.getElementById("timerCourse").value;
-      state.timer = {
-        isRunning: true,
-        startTime: new Date().toISOString(),
-        course: selectedCourse
-      };
-
-      saveState();
-      renderTimer();
-      startTimerLoop();
-    }
-
-    function stopTimer() {
-      if (!state.timer.isRunning || !state.timer.startTime) {
-        alert("No active study session to stop.");
-        return;
-      }
-
-      const endTime = new Date();
-      const startTime = new Date(state.timer.startTime);
-      const elapsedMs = endTime.getTime() - startTime.getTime();
-
-      if (elapsedMs < 1000) {
-        alert("Session was too short to save.");
-        return;
-      }
-
-      const hours = +(elapsedMs / 3600000).toFixed(2);
-      const notes = `Timer session • ${startTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} - ${endTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
-
-      const entry = {
-        id: crypto.randomUUID(),
-        date: endTime.toISOString().slice(0, 10),
-        course: state.timer.course,
-        hours,
-        focus: 4,
-        notes,
-        fromTimer: true,
-        createdAt: new Date().toISOString()
-      };
-
-      state.entries.push(entry);
-      state.timer = {
-        isRunning: false,
-        startTime: null,
-        course: document.getElementById("timerCourse").value
-      };
-
-      saveState();
-      renderAll();
-      renderTimer();
-      stopTimerLoop();
-      switchTab("ledger");
-      alert(`Saved ${hours.toFixed(2)} hours to your ledger.`);
-    }
-
-    function renderAll() {
-      renderTop();
-      renderLedger();
-      renderSettings();
-      renderTimer();
-    }
-
-    function addOrUpdateEntry() {
-      const date = document.getElementById("date").value;
-      const course = document.getElementById("course").value;
-      const hours = Number(document.getElementById("hours").value);
-      const focus = Number(document.getElementById("focus").value || 4);
-      const notes = document.getElementById("notes").value.trim();
-
-      if (!date || !course || !hours) {
-        alert("Enter date, course, and hours.");
-        return;
-      }
-
-      const entry = {
-        id: editingId || crypto.randomUUID(),
-        date,
-        course,
-        hours,
-        focus,
-        notes,
-        fromTimer: false,
-        createdAt: new Date().toISOString()
-      };
-
-      if (editingId) {
-        const existing = state.entries.find(e => e.id === editingId);
-        entry.fromTimer = existing?.fromTimer || false;
-        entry.createdAt = existing?.createdAt || new Date().toISOString();
-        state.entries = state.entries.map(e => e.id === editingId ? entry : e);
-        editingId = null;
-        document.getElementById("saveBtn").textContent = "Add Entry";
-      } else {
-        state.entries.push(entry);
-      }
-
-      saveState();
-      clearForm();
-      renderAll();
-      switchTab("ledger");
-    }
-
-    function clearForm() {
-      document.getElementById("date").value = todayDateString();
-      document.getElementById("course").value = "Google IT";
-      document.getElementById("hours").value = "";
-      document.getElementById("focus").value = "4";
-      document.getElementById("notes").value = "";
-    }
-
-    function editEntry(id) {
-      const entry = state.entries.find(e => e.id === id);
-      if (!entry) return;
-
-      editingId = id;
-      document.getElementById("date").value = entry.date;
-      document.getElementById("course").value = entry.course;
-      document.getElementById("hours").value = entry.hours;
-      document.getElementById("focus").value = entry.focus || 4;
-      document.getElementById("notes").value = entry.notes || "";
-      document.getElementById("saveBtn").textContent = "Save Changes";
-      switchTab("add");
-    }
-
-    function deleteEntry(id) {
-      if (!confirm("Delete this entry?")) return;
-      state.entries = state.entries.filter(e => e.id !== id);
-      saveState();
-      renderAll();
-    }
-
-    function saveSettings() {
-      state.currentCourse = document.getElementById("currentCourse").value.trim() || "Google IT";
-      state.currentModule = document.getElementById("currentModule").value.trim() || "Course 2 – Networking";
-      state.currentProgress = Number(document.getElementById("currentProgress").value || 0);
-      state.weeklyGoal = Number(document.getElementById("weeklyGoal").value || 20);
-      state.timer.course = document.getElementById("timerCourse").value;
-      saveState();
-      renderAll();
-      alert("Settings saved.");
-    }
-
-    function exportBackup() {
-      const backup = {
-        exportedAt: new Date().toISOString(),
-        app: "Study Ledger",
-        version: 2,
-        data: state
-      };
-
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `study-ledger-backup-${todayDateString()}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function importBackupFile(file) {
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        try {
-          const parsed = JSON.parse(event.target.result);
-
-          let importedData = null;
-
-          if (parsed && parsed.data && Array.isArray(parsed.data.entries)) {
-            importedData = parsed.data;
-          } else if (parsed && Array.isArray(parsed.entries)) {
-            importedData = parsed;
-          }
-
-          if (!importedData) {
-            alert("Invalid backup file.");
-            return;
-          }
-
-          state = {
-            weeklyGoal: Number(importedData.weeklyGoal || 20),
-            currentCourse: importedData.currentCourse || "Google IT",
-            currentModule: importedData.currentModule || "Course 2 – Networking",
-            currentProgress: Number(importedData.currentProgress || 0),
-            entries: Array.isArray(importedData.entries) ? importedData.entries : [],
-            timer: importedData.timer || { isRunning: false, startTime: null, course: "Google IT" }
-          };
-
-          saveState();
-          clearForm();
-          renderAll();
-
-          if (state.timer.isRunning) {
-            startTimerLoop();
-          }
-
-          alert("Backup imported.");
-        } catch (err) {
-          alert("Could not import backup file.");
-        }
-      };
-
-      reader.readAsText(file);
-    }
-
-    function clearAllData() {
-      if (!confirm("Clear all ledger data? This cannot be undone unless you exported a backup.")) return;
-
-      state = {
-        weeklyGoal: 20,
-        currentCourse: "Google IT",
-        currentModule: "Course 2 – Networking",
-        currentProgress: 0,
-        entries: [],
-        timer: {
-          isRunning: false,
-          startTime: null,
-          course: "Google IT"
-        }
-      };
-
-      saveState();
-      stopTimerLoop();
-      clearForm();
-      renderAll();
-    }
-
-    function switchTab(name) {
-      document.querySelectorAll(".tab-btn").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.tab === name);
-      });
-      document.querySelectorAll(".panel").forEach(panel => panel.classList.remove("active"));
-      document.getElementById(`panel-${name}`).classList.add("active");
-    }
-
-    document.querySelectorAll(".tab-btn").forEach(btn => {
-      btn.addEventListener("click", () => switchTab(btn.dataset.tab));
-    });
-
-    document.getElementById("saveBtn").addEventListener("click", addOrUpdateEntry);
-
-    document.getElementById("importFile").addEventListener("change", function(e) {
-      importBackupFile(e.target.files[0]);
-      e.target.value = "";
-    });
-
-    document.getElementById("timerCourse").addEventListener("change", function(e) {
-      if (!state.timer.isRunning) {
-        state.timer.course = e.target.value;
-        saveState();
-      }
-    });
-
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").catch(() => {});
-      });
-    }
-
-    clearForm();
-    renderAll();
-
-    if (state.timer && state.timer.isRunning) {
-      startTimerLoop();
-    }
-  </script>
+  <div class="card">
+    <h3>Quick Stats</h3>
+    <p>Week: <span id="week">0</span> hrs</p>
+    <p>Month: <span id="month">0</span> hrs</p>
+  </div>
+</div>
+
+<!-- LEDGER -->
+<div id="ledger" style="display:none">
+  <div class="card">
+    <h3>Add Manual Entry</h3>
+    <input type="number" id="manualHours" placeholder="Hours (e.g. 1.5)">
+    <button class="btn-blue" onclick="addManual()">Add</button>
+  </div>
+
+  <div id="entries"></div>
+</div>
+
+<!-- STATS -->
+<div id="stats" style="display:none">
+  <div class="card">
+    <h3>Stats</h3>
+    <p>Total Entries: <span id="totalEntries">0</span></p>
+    <p>Total Hours: <span id="totalHours">0</span></p>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="settings" style="display:none">
+  <div class="card">
+    <h3>Data</h3>
+    <button class="btn-blue" onclick="exportData()">Export</button>
+    <input type="file" onchange="importData(event)">
+  </div>
+</div>
+
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("ledger")) || [];
+let startTime = null;
+let timerInterval = null;
+
+function save() {
+  localStorage.setItem("ledger", JSON.stringify(data));
+  render();
+}
+
+function showTab(tab) {
+  ["dash","ledger","stats","settings"].forEach(id=>{
+    document.getElementById(id).style.display = "none";
+  });
+  document.getElementById(tab).style.display = "block";
+
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+  event.target.classList.add("active");
+}
+
+function start() {
+  startTime = Date.now();
+  timerInterval = setInterval(updateTimer, 1000);
+}
+
+function stop() {
+  if (!startTime) return;
+  clearInterval(timerInterval);
+
+  let diff = (Date.now() - startTime) / 3600000;
+  let course = document.getElementById("course").value;
+
+  data.push({
+    course,
+    hours: diff,
+    date: new Date().toISOString()
+  });
+
+  startTime = null;
+  save();
+}
+
+function updateTimer() {
+  let diff = Date.now() - startTime;
+  let sec = Math.floor(diff / 1000);
+  let h = String(Math.floor(sec / 3600)).padStart(2,"0");
+  let m = String(Math.floor((sec % 3600)/60)).padStart(2,"0");
+  let s = String(sec % 60).padStart(2,"0");
+
+  document.getElementById("timer").innerText = `${h}:${m}:${s}`;
+}
+
+function addManual() {
+  let hours = parseFloat(document.getElementById("manualHours").value);
+  if (!hours) return;
+
+  data.push({
+    course: "Manual",
+    hours,
+    date: new Date().toISOString()
+  });
+
+  save();
+}
+
+function render() {
+  let container = document.getElementById("entries");
+  container.innerHTML = "";
+
+  let total = 0;
+
+  data.slice().reverse().forEach((e,i)=>{
+    total += e.hours;
+
+    let div = document.createElement("div");
+    div.className = "entry";
+    div.innerHTML = `
+      <strong>${e.course}</strong> - ${e.hours.toFixed(2)} hrs
+      <br>
+      <small>${new Date(e.date).toLocaleString()}</small>
+      <div class="row">
+        <button onclick="del(${data.length-1-i})">Delete</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+
+  document.getElementById("totalEntries").innerText = data.length;
+  document.getElementById("totalHours").innerText = total.toFixed(2);
+  document.getElementById("week").innerText = total.toFixed(2);
+  document.getElementById("month").innerText = total.toFixed(2);
+}
+
+function del(i) {
+  data.splice(i,1);
+  save();
+}
+
+function exportData() {
+  let blob = new Blob([JSON.stringify(data)], {type:"application/json"});
+  let a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ledger.json";
+  a.click();
+}
+
+function importData(e) {
+  let file = e.target.files[0];
+  let reader = new FileReader();
+  reader.onload = () => {
+    data = JSON.parse(reader.result);
+    save();
+  };
+  reader.readAsText(file);
+}
+
+render();
+</script>
 </body>
 </html>
