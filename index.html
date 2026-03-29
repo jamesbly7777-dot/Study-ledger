@@ -1,241 +1,642 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Study Tracker Pro</title>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <title>Atlas Study Tracker Pro</title>
 
-<link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="description" content="App-store style study tracker with timer, stats, streaks, export/import, offline support, and optional cloud sync." />
 
-<style>
-  body {
-    margin: 0;
-    font-family: "Segoe UI", sans-serif;
-    background: linear-gradient(135deg, #0f172a, #1e293b);
-    color: white;
-    display: flex;
-    justify-content: center;
-  }
+  <link rel="manifest" href="manifest.json" />
 
-  .app {
-    max-width: 420px;
-    width: 100%;
-    padding: 20px;
-  }
+  <!-- Firebase compat SDKs -->
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-  h1 {
-    text-align: center;
-    font-size: 22px;
-  }
-
-  .card {
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(12px);
-    border-radius: 16px;
-    padding: 15px;
-    margin-top: 15px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  }
-
-  button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 10px;
-    border: none;
-    border-radius: 10px;
-    background: #22c55e;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-  }
-
-  button.stop {
-    background: #ef4444;
-  }
-
-  input {
-    width: 100%;
-    padding: 10px;
-    border-radius: 10px;
-    border: none;
-    margin-top: 10px;
-  }
-
-  .timer {
-    font-size: 32px;
-    text-align: center;
-    margin-top: 10px;
-  }
-
-  .stat {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 10px;
-  }
-
-  canvas {
-    margin-top: 10px;
-    width: 100%;
-  }
-
-</style>
-</head>
-
-<body>
-
-<div class="app">
-
-<h1>📚 Study Tracker Pro</h1>
-
-<div class="card">
-  <div class="timer" id="timer">00:00:00</div>
-  <button onclick="startTimer()">Start</button>
-  <button class="stop" onclick="stopTimer()">Stop</button>
-</div>
-
-<div class="card">
-  <input id="subject" placeholder="What did you study?" />
-  <button onclick="saveSession()">Save Session</button>
-</div>
-
-<div class="card">
-  <div class="stat">🔥 Streak: <span id="streak">0</span></div>
-  <div class="stat">🎯 Daily Goal (hrs): <span id="goal">2</span></div>
-  <div class="stat">⏱ Today: <span id="today">0</span></div>
-</div>
-
-<div class="card">
-  <canvas id="chart"></canvas>
-</div>
-
-<div class="card">
-  <button onclick="exportData()">Export Data</button>
-  <input type="file" onchange="importData(event)" />
-</div>
-
-</div>
-
-<script>
-let startTime = null;
-let interval;
-
-function formatTime(ms) {
-  let totalSeconds = Math.floor(ms / 1000);
-  let hrs = String(Math.floor(totalSeconds / 3600)).padStart(2,'0');
-  let mins = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2,'0');
-  let secs = String(totalSeconds % 60).padStart(2,'0');
-  return `${hrs}:${mins}:${secs}`;
-}
-
-function startTimer() {
-  startTime = Date.now();
-  interval = setInterval(() => {
-    document.getElementById("timer").innerText =
-      formatTime(Date.now() - startTime);
-  }, 1000);
-}
-
-function stopTimer() {
-  clearInterval(interval);
-}
-
-function saveSession() {
-  let subject = document.getElementById("subject").value;
-  let duration = Date.now() - startTime;
-
-  let sessions = JSON.parse(localStorage.getItem("sessions") || "[]");
-
-  sessions.push({
-    subject,
-    duration,
-    date: new Date().toISOString()
-  });
-
-  localStorage.setItem("sessions", JSON.stringify(sessions));
-
-  updateStats();
-  drawChart();
-}
-
-function updateStats() {
-  let sessions = JSON.parse(localStorage.getItem("sessions") || "[]");
-
-  let today = new Date().toDateString();
-  let todayTotal = 0;
-
-  sessions.forEach(s => {
-    if (new Date(s.date).toDateString() === today) {
-      todayTotal += s.duration;
+  <style>
+    :root{
+      --bg-1:#020617;
+      --bg-2:#0f172a;
+      --bg-3:#1e293b;
+      --card:rgba(255,255,255,.10);
+      --card-strong:rgba(255,255,255,.14);
+      --border:rgba(255,255,255,.14);
+      --text:#e5eefc;
+      --muted:#9fb0cf;
+      --accent:#60a5fa;
+      --accent-2:#22c55e;
+      --danger:#ef4444;
+      --warn:#f59e0b;
+      --shadow:0 10px 40px rgba(0,0,0,.35);
+      --radius:24px;
+      --radius-sm:16px;
     }
-  });
 
-  document.getElementById("today").innerText =
-    (todayTotal / 3600000).toFixed(2) + " hrs";
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0}
+    body{
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(96,165,250,.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(34,197,94,.12), transparent 22%),
+        linear-gradient(160deg, var(--bg-1), var(--bg-2) 35%, var(--bg-3));
+      min-height:100vh;
+      padding:16px;
+    }
 
-  // streak logic
-  let streak = 0;
-  let day = new Date();
+    .shell{
+      max-width: 980px;
+      margin: 0 auto;
+      display:grid;
+      gap:16px;
+    }
 
-  while (true) {
-    let found = sessions.some(s =>
-      new Date(s.date).toDateString() === day.toDateString()
-    );
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      position:sticky;
+      top:0;
+      z-index:10;
+      backdrop-filter: blur(14px);
+      padding:8px 0;
+    }
 
-    if (found) {
-      streak++;
-      day.setDate(day.getDate() - 1);
-    } else break;
-  }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
 
-  document.getElementById("streak").innerText = streak;
-}
+    .logo{
+      width:48px;
+      height:48px;
+      border-radius:18px;
+      background:
+        linear-gradient(135deg, rgba(96,165,250,.95), rgba(34,197,94,.85));
+      display:grid;
+      place-items:center;
+      font-size:24px;
+      box-shadow: var(--shadow);
+    }
 
-function drawChart() {
-  let ctx = document.getElementById("chart").getContext("2d");
-  let sessions = JSON.parse(localStorage.getItem("sessions") || "[]");
+    .title-wrap h1{
+      margin:0;
+      font-size:1.2rem;
+      line-height:1.1;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
 
-  let data = {};
+    .title-wrap p{
+      margin:4px 0 0;
+      color:var(--muted);
+      font-size:.92rem;
+    }
 
-  sessions.forEach(s => {
-    let day = new Date(s.date).toDateString();
-    data[day] = (data[day] || 0) + s.duration;
-  });
+    .top-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
 
-  let labels = Object.keys(data).slice(-7);
-  let values = labels.map(d => data[d] / 3600000);
+    .btn, .icon-btn, .file-label{
+      border:none;
+      color:white;
+      cursor:pointer;
+      transition:.2s ease;
+      font-weight:700;
+    }
 
-  ctx.clearRect(0,0,300,150);
+    .btn{
+      padding:12px 16px;
+      border-radius:16px;
+      background:linear-gradient(135deg, rgba(96,165,250,.95), rgba(59,130,246,.78));
+      box-shadow: var(--shadow);
+    }
 
-  labels.forEach((label, i) => {
-    ctx.fillRect(i * 40, 150 - values[i]*20, 30, values[i]*20);
-  });
-}
+    .btn:hover, .icon-btn:hover, .file-label:hover{
+      transform: translateY(-1px);
+      filter:brightness(1.05);
+    }
 
-function exportData() {
-  let data = localStorage.getItem("sessions");
-  let blob = new Blob([data], { type: "application/json" });
-  let a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "study-data.json";
-  a.click();
-}
+    .btn.secondary{
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--border);
+      box-shadow:none;
+    }
 
-function importData(e) {
-  let file = e.target.files[0];
-  let reader = new FileReader();
+    .btn.success{
+      background:linear-gradient(135deg, rgba(34,197,94,.95), rgba(22,163,74,.85));
+    }
 
-  reader.onload = function() {
-    localStorage.setItem("sessions", reader.result);
-    updateStats();
-    drawChart();
-  };
+    .btn.danger{
+      background:linear-gradient(135deg, rgba(239,68,68,.96), rgba(220,38,38,.82));
+    }
 
-  reader.readAsText(file);
-}
+    .btn.warn{
+      background:linear-gradient(135deg, rgba(245,158,11,.96), rgba(217,119,6,.82));
+    }
 
-updateStats();
-drawChart();
-</script>
+    .icon-btn{
+      width:48px;
+      height:48px;
+      border-radius:16px;
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--border);
+      display:grid;
+      place-items:center;
+      font-size:1rem;
+    }
 
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:16px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding:18px;
+    }
+
+    .hero{
+      display:grid;
+      gap:14px;
+      overflow:hidden;
+      position:relative;
+    }
+
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:auto -60px -80px auto;
+      width:220px;
+      height:220px;
+      border-radius:50%;
+      background: radial-gradient(circle, rgba(96,165,250,.22), transparent 60%);
+      pointer-events:none;
+    }
+
+    .hero-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+
+    .eyebrow{
+      color:#c8d9f8;
+      font-size:.8rem;
+      text-transform:uppercase;
+      letter-spacing:.16em;
+      font-weight:800;
+      opacity:.9;
+    }
+
+    .hero h2{
+      margin:8px 0 6px;
+      font-size:1.8rem;
+      line-height:1.05;
+    }
+
+    .sub{
+      margin:0;
+      color:var(--muted);
+    }
+
+    .timer{
+      text-align:center;
+      font-size: clamp(2.5rem, 6vw, 4.1rem);
+      font-weight:900;
+      letter-spacing:.06em;
+      padding:18px;
+      border-radius:22px;
+      background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.12);
+    }
+
+    .timer-status{
+      display:flex;
+      justify-content:center;
+      margin-top:-2px;
+      color:#c6d4ee;
+      font-weight:700;
+      font-size:.95rem;
+    }
+
+    .controls{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+    }
+
+    .mini-grid{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:12px;
+    }
+
+    .stat{
+      background:rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:20px;
+      padding:14px;
+    }
+
+    .stat .label{
+      color:var(--muted);
+      font-size:.8rem;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+
+    .stat .value{
+      margin-top:8px;
+      font-size:1.4rem;
+      font-weight:900;
+    }
+
+    .section-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .section-title h3{
+      margin:0;
+      font-size:1.05rem;
+    }
+
+    .row{
+      display:grid;
+      gap:12px;
+    }
+
+    .input, .select{
+      width:100%;
+      border:none;
+      outline:none;
+      border-radius:16px;
+      padding:14px 14px;
+      color:var(--text);
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.11);
+      font:inherit;
+    }
+
+    .input::placeholder{
+      color:#adc1e6;
+    }
+
+    .split{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+
+    .session-list{
+      display:grid;
+      gap:10px;
+      max-height:420px;
+      overflow:auto;
+      padding-right:4px;
+    }
+
+    .session-item{
+      background:rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:18px;
+      padding:14px;
+      display:grid;
+      gap:6px;
+    }
+
+    .session-top{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+    }
+
+    .session-name{
+      font-weight:800;
+    }
+
+    .pill{
+      padding:7px 10px;
+      border-radius:999px;
+      background:rgba(96,165,250,.18);
+      border:1px solid rgba(96,165,250,.28);
+      color:#dcecff;
+      font-size:.84rem;
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .meta{
+      color:var(--muted);
+      font-size:.9rem;
+    }
+
+    .tools{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:10px;
+    }
+
+    .canvas-wrap{
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:20px;
+      padding:14px;
+    }
+
+    canvas{
+      width:100%;
+      height:240px;
+      display:block;
+    }
+
+    .auth-box{
+      display:grid;
+      gap:10px;
+    }
+
+    .hint{
+      color:var(--muted);
+      font-size:.92rem;
+      line-height:1.45;
+    }
+
+    .badge-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .badge{
+      padding:8px 10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.1);
+      font-size:.82rem;
+      color:#d9e7ff;
+      font-weight:700;
+    }
+
+    .hidden{
+      display:none !important;
+    }
+
+    .footer-note{
+      color:var(--muted);
+      text-align:center;
+      font-size:.9rem;
+      padding:6px 0 18px;
+    }
+
+    input[type=file]{
+      display:none;
+    }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%) translateY(18px);
+      background:rgba(15,23,42,.92);
+      border:1px solid rgba(255,255,255,.12);
+      color:#eef4ff;
+      padding:12px 16px;
+      border-radius:14px;
+      box-shadow: var(--shadow);
+      opacity:0;
+      pointer-events:none;
+      transition:.25s ease;
+      z-index:100;
+      font-weight:700;
+    }
+
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 860px){
+      .grid{
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px){
+      .mini-grid{
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .controls{
+        grid-template-columns: 1fr;
+      }
+      .split, .tools{
+        grid-template-columns: 1fr;
+      }
+      .title-wrap h1{
+        font-size:1rem;
+      }
+      .logo{
+        width:42px;height:42px;border-radius:14px;
+      }
+      .top-actions{
+        width:100%;
+      }
+      .topbar{
+        align-items:flex-start;
+        flex-direction:column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">⚡</div>
+        <div class="title-wrap">
+          <h1>Atlas Study Tracker Pro</h1>
+          <p>App-store style study dashboard</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button class="btn secondary hidden" id="installBtn">Install App</button>
+        <button class="icon-btn" id="themeBtn" title="Toggle theme">🌙</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card hero">
+        <div class="hero-top">
+          <div>
+            <div class="eyebrow">Focus Engine</div>
+            <h2>Build streaks. Track hours. Feel like a real app.</h2>
+            <p class="sub">Timer, sessions, goals, charts, export, import, install, offline support, and optional cloud sync.</p>
+          </div>
+          <div class="badge-row">
+            <div class="badge">PWA</div>
+            <div class="badge">Offline</div>
+            <div class="badge">Export</div>
+            <div class="badge">Firebase Ready</div>
+          </div>
+        </div>
+
+        <div class="timer" id="timerDisplay">00:00:00</div>
+        <div class="timer-status" id="timerStatus">Ready</div>
+
+        <div class="row">
+          <input class="input" id="studyTitle" placeholder="Session title — ex: Google IT Networking Module 5" />
+          <div class="split">
+            <input class="input" id="studyCategory" placeholder="Category — ex: Google IT / Codecademy / A+" />
+            <input class="input" id="focusRating" type="number" min="1" max="5" placeholder="Focus 1–5" />
+          </div>
+          <textarea class="input" id="studyNotes" rows="4" placeholder="Notes, distractions, what you studied..."></textarea>
+        </div>
+
+        <div class="controls">
+          <button class="btn success" id="startBtn">Start</button>
+          <button class="btn warn" id="pauseBtn">Pause</button>
+          <button class="btn danger" id="stopBtn">Stop & Save</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Snapshot</h3>
+          <span class="pill" id="cloudStatus">Local mode</span>
+        </div>
+
+        <div class="mini-grid">
+          <div class="stat">
+            <div class="label">Today</div>
+            <div class="value" id="todayHours">0.00h</div>
+          </div>
+          <div class="stat">
+            <div class="label">Week</div>
+            <div class="value" id="weekHours">0.00h</div>
+          </div>
+          <div class="stat">
+            <div class="label">Streak</div>
+            <div class="value" id="streakCount">0</div>
+          </div>
+          <div class="stat">
+            <div class="label">Goal</div>
+            <div class="value" id="goalDisplay">2.00h</div>
+          </div>
+        </div>
+
+        <div style="height:14px"></div>
+
+        <div class="section-title">
+          <h3>Settings</h3>
+        </div>
+        <div class="row">
+          <div class="split">
+            <input class="input" id="dailyGoalInput" type="number" min="0.25" step="0.25" placeholder="Daily goal hours" />
+            <button class="btn secondary" id="saveGoalBtn">Save Goal</button>
+          </div>
+          <div class="tools">
+            <button class="btn secondary" id="notifyBtn">Enable Notifications</button>
+            <button class="btn secondary" id="syncBtn">Push Local → Cloud</button>
+          </div>
+        </div>
+
+        <div style="height:14px"></div>
+
+        <div class="section-title">
+          <h3>Account / Cloud Sync</h3>
+        </div>
+        <div class="auth-box">
+          <input class="input" id="emailInput" type="email" placeholder="Email" />
+          <input class="input" id="passwordInput" type="password" placeholder="Password" />
+          <div class="tools">
+            <button class="btn secondary" id="signupBtn">Sign Up</button>
+            <button class="btn secondary" id="loginBtn">Login</button>
+          </div>
+          <button class="btn secondary" id="logoutBtn">Logout</button>
+          <div class="hint" id="authText">Firebase not configured yet. App works fully in local mode until you add your Firebase keys.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="section-title">
+          <h3>Last 7 Days</h3>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="hoursChart" width="800" height="240"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h3>Tools</h3>
+        </div>
+        <div class="tools">
+          <button class="btn secondary" id="exportBtn">Export JSON</button>
+          <label class="file-label btn secondary" for="importFile">Import JSON</label>
+          <input id="importFile" type="file" accept="application/json" />
+          <button class="btn secondary" id="seedBtn">Add Demo Data</button>
+          <button class="btn danger" id="clearBtn">Clear All Data</button>
+        </div>
+        <div style="height:12px"></div>
+        <div class="hint">
+          Export is your backup. Import restores your sessions.  
+          Clear All wipes local data only unless you manually sync again.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">
+        <h3>Recent Sessions</h3>
+        <span class="pill" id="sessionCount">0 sessions</span>
+      </div>
+      <div class="session-list" id="sessionList"></div>
+    </div>
+
+    <div class="footer-note">
+      Built to feel polished on desktop and mobile. Install it on your phone from Chrome/Samsung Internet after deployment.
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    window.FIREBASE_CONFIG = {
+      apiKey: "",
+      authDomain: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: ""
+    };
+  </script>
+
+  <script defer src="app.js"></script>
 </body>
 </html>
