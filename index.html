@@ -750,12 +750,11 @@
   </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
-<script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><script>
+  <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("/service-worker.js")
+      navigator.serviceWorker.register("/Study-ledger/service-worker.js")
         .then(() => console.log("Service Worker Registered"))
         .catch(err => console.error("SW failed:", err));
     });
@@ -765,4 +764,8 @@
 <script defer src="app.js"></script>
 </body>
 </html>
+
+
+
+
 
