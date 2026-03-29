@@ -515,9 +515,9 @@ async function enableNotifications() {
   } else {
     showToast("Notifications not enabled");
   }
-}
 
-function applyTheme(theme) {
+
+  function applyTheme(theme) {
   if (theme === "light") {
     document.body.classList.add("light");
     if (el.themeBtn) el.themeBtn.textContent = "☀️";
@@ -528,4 +528,6 @@ function applyTheme(theme) {
 }
 
 function initTheme() {
-  const saved
+  const saved = localStorage.getItem("theme") || "dark";
+  applyTheme(saved);
+}
