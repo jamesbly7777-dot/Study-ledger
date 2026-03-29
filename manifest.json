@@ -1,10 +1,26 @@
 {
   "name": "Atlas Study Tracker Pro",
-  "short_name": "StudyTracker",
-  "start_url": "./index.html",
+  "short_name": "Atlas Study",
+  "description": "App-store style study tracker with timer, sessions, stats, cloud sync, and offline support.",
+  "start_url": "/Study-ledger/",
+  "scope": "/Study-ledger/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "description": "A polished study tracker with timer, streaks, goals, charts, offline support, export/import, and optional cloud sync.",
-  "orientation": "portrait"
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
