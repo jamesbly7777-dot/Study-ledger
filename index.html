@@ -1156,16 +1156,20 @@
   <!-- ── Toast ──────────────────────────────────── -->
   <div class="toast" id="toast"></div>
 
-  <!-- ── Firebase config ────────────────────────── -->
+  <!-- ═══════════════════════════════════════════════════════════
+       FIREBASE CONFIG — replace each value with your project's keys.
+       Get them from: Firebase Console → Project Settings → Your apps
+       → Web app → SDK setup and configuration → Config object.
+  ═══════════════════════════════════════════════════════════ -->
   <script>
     window.FIREBASE_CONFIG = {
-      apiKey: "AIzaSyB5MYblAK-51RgeoP6zOyPSETUP2ILRbow",
-      authDomain: "study-ledger-app.firebaseapp.com",
-      projectId: "study-ledger-app",
-      storageBucket: "study-ledger-app.appspot.com",
-      messagingSenderId: "815322107048",
-      appId: "1:815322107048:web:59c09e7d6cd696205a469d",
-      measurementId: "G-QD71MVP9H9"
+      apiKey:            "YOUR_API_KEY",
+      authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId:         "YOUR_PROJECT_ID",
+      storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId:             "YOUR_APP_ID",
+      measurementId:     "YOUR_MEASUREMENT_ID"   // optional — remove line if unused
     };
   </script>
 
