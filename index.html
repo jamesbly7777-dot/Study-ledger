@@ -2,195 +2,232 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Atlas Study Tracker Pro</title>
-
   <meta name="theme-color" content="#0f172a" />
-  <meta
-    name="description"
-    content="App-store style study tracker with timer, sessions, stats, export/import, install support, and cloud sync."
-  />
-
+  <meta name="description" content="App-store style study tracker with timer, sessions, stats, export/import, install support, and cloud sync." />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <style>
+    /* ── Reset ───────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Design Tokens ─────────────────────────────── */
     :root {
       --bg-1: #020617;
       --bg-2: #0f172a;
       --bg-3: #1e293b;
       --card: rgba(30, 41, 59, 0.88);
       --card-2: rgba(51, 65, 85, 0.72);
-      --line: rgba(148, 163, 184, 0.18);
-      --text: #e5eefc;
-      --muted: #a9b8d0;
+      --line: rgba(148, 163, 184, 0.14);
+      --text: #e2eaf8;
+      --muted: #8fa3be;
       --green: #22c55e;
       --amber: #f59e0b;
       --red: #ef4444;
       --blue: #60a5fa;
       --pill: rgba(255, 255, 255, 0.06);
-      --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      --shadow-sm: 0 4px 16px rgba(0,0,0,0.2);
+      --shadow: 0 12px 40px rgba(0,0,0,0.3);
+      --shadow-lg: 0 24px 64px rgba(0,0,0,0.4);
       --radius-xl: 28px;
-      --radius-lg: 22px;
-      --radius-md: 18px;
-      --radius-sm: 14px;
+      --radius-lg: 20px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --t: 200ms cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     body.light {
       --bg-1: #dbeafe;
       --bg-2: #eff6ff;
-      --bg-3: #cbd5e1;
-      --card: rgba(255, 255, 255, 0.88);
-      --card-2: rgba(226, 232, 240, 0.9);
-      --line: rgba(15, 23, 42, 0.08);
+      --bg-3: #e2e8f0;
+      --card: rgba(255, 255, 255, 0.92);
+      --card-2: rgba(241, 245, 249, 0.95);
+      --line: rgba(15, 23, 42, 0.1);
       --text: #0f172a;
       --muted: #475569;
-      --pill: rgba(15, 23, 42, 0.05);
-      --shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+      --pill: rgba(15, 23, 42, 0.06);
+      --shadow-sm: 0 4px 16px rgba(15,23,42,0.08);
+      --shadow: 0 12px 40px rgba(15,23,42,0.1);
+      --shadow-lg: 0 24px 64px rgba(15,23,42,0.12);
     }
 
-    * {
-      box-sizing: border-box;
-    }
-
-    html, body {
-      margin: 0;
-      min-height: 100%;
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 24%),
-        radial-gradient(circle at top right, rgba(59, 130, 246, 0.14), transparent 22%),
-        linear-gradient(180deg, var(--bg-2), var(--bg-1));
-    }
+    /* ── Base ─────────────────────────────────────── */
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
 
     body {
-      padding: 20px 16px 40px;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(ellipse at top left, rgba(56,189,248,0.12), transparent 42%),
+        radial-gradient(ellipse at top right, rgba(99,102,241,0.09), transparent 42%),
+        linear-gradient(180deg, var(--bg-2), var(--bg-1) 70%);
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100dvh;
+      padding: 16px 14px 56px;
+      overflow-x: hidden;
     }
 
-    .app-shell {
-      max-width: 1180px;
-      margin: 0 auto;
+    /* ── App shell ────────────────────────────────── */
+    .app-shell { max-width: 1200px; margin: 0 auto; }
+
+    /* ── Animations ───────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
+    @keyframes pulseGreen {
+      0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0.45); }
+      70%  { box-shadow: 0 0 0 10px rgba(34,197,94,0); }
+      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    }
+
+    /* ── Hero ─────────────────────────────────────── */
     .hero {
-      position: relative;
-      padding: 20px;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.07), transparent 52%),
+        linear-gradient(145deg, rgba(30,41,59,0.9), rgba(15,23,42,0.97));
       border: 1px solid var(--line);
       border-radius: var(--radius-xl);
-      background:
-        radial-gradient(circle at 30% 0%, rgba(255,255,255,0.08), transparent 30%),
-        linear-gradient(135deg, rgba(30,41,59,0.85), rgba(15,23,42,0.96));
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-lg);
+      padding: 18px;
+      margin-bottom: 16px;
+      animation: fadeUp 0.4s ease both;
       overflow: hidden;
-      margin-bottom: 18px;
     }
 
     body.light .hero {
       background:
-        radial-gradient(circle at 30% 0%, rgba(255,255,255,0.75), transparent 30%),
-        linear-gradient(135deg, rgba(255,255,255,0.95), rgba(226,232,240,0.92));
+        radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.8), transparent 52%),
+        linear-gradient(145deg, rgba(255,255,255,0.95), rgba(226,232,240,0.9));
     }
 
     .hero-top {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 12px;
+      margin-bottom: 16px;
     }
 
     .brand {
       display: flex;
-      gap: 14px;
-      align-items: flex-start;
+      gap: 12px;
+      align-items: center;
       min-width: 0;
     }
 
     .logo {
-      width: 82px;
-      height: 82px;
-      border-radius: 26px;
+      width: 56px;
+      height: 56px;
+      flex: 0 0 56px;
+      border-radius: 18px;
       display: grid;
       place-items: center;
-      font-size: 42px;
+      font-size: 28px;
       background: linear-gradient(135deg, #38bdf8, #22c55e);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 12px 30px rgba(0,0,0,0.25);
-      flex: 0 0 auto;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 8px 24px rgba(0,0,0,0.28);
     }
 
     .brand-copy h1 {
-      margin: 0;
-      font-size: clamp(1.9rem, 5vw, 3rem);
-      line-height: 1.02;
-      letter-spacing: -0.04em;
+      font-size: clamp(1.15rem, 4.5vw, 2.2rem);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      font-weight: 800;
     }
 
     .brand-copy p {
-      margin: 8px 0 0;
+      margin-top: 3px;
       color: var(--muted);
-      font-size: clamp(1rem, 2.8vw, 1.2rem);
+      font-size: clamp(0.8rem, 2.5vw, 0.95rem);
     }
 
     .theme-btn {
-      width: 72px;
-      height: 72px;
-      border-radius: 24px;
+      width: 50px;
+      height: 50px;
+      flex: 0 0 50px;
+      border-radius: 16px;
       border: 1px solid var(--line);
       background: var(--pill);
       color: var(--text);
-      font-size: 34px;
+      font-size: 22px;
       cursor: pointer;
-      flex: 0 0 auto;
+      transition: background var(--t), transform var(--t);
+      display: grid;
+      place-items: center;
     }
 
+    .theme-btn:hover  { background: rgba(255,255,255,0.1); transform: scale(1.06); }
+    .theme-btn:active { transform: scale(0.93); }
+    body.light .theme-btn:hover { background: rgba(15,23,42,0.08); }
+
+    /* ── Two-column grid (stacked on mobile) ──────── */
     .grid {
       display: grid;
-      grid-template-columns: 1.35fr 1fr;
-      gap: 18px;
-      margin-top: 18px;
+      grid-template-columns: 1fr;
+      gap: 14px;
     }
 
+    /* ── Cards ────────────────────────────────────── */
     .card {
       border: 1px solid var(--line);
       background: var(--card);
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow);
       padding: 18px;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
+    /* ── Labels & titles ──────────────────────────── */
     .section-label {
-      margin: 0 0 10px;
-      color: var(--muted);
-      font-size: 0.82rem;
+      font-size: 0.72rem;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.22em;
-      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .section-title h3 {
+      font-size: clamp(1.2rem, 3.5vw, 1.75rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
     }
 
     .hero-title {
-      margin: 0;
-      font-size: clamp(2rem, 4.4vw, 3.6rem);
-      line-height: 0.95;
+      font-size: clamp(1.5rem, 5.5vw, 3.2rem);
+      line-height: 0.96;
       letter-spacing: -0.05em;
+      font-weight: 800;
+      margin-bottom: 10px;
     }
 
     .hero-copy {
-      margin: 14px 0 14px;
       color: var(--muted);
-      font-size: 1rem;
-      line-height: 1.45;
+      font-size: clamp(0.88rem, 2.5vw, 1rem);
+      line-height: 1.55;
+      margin-bottom: 14px;
     }
 
+    /* ── Pill row ─────────────────────────────────── */
     .pill-row {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .pill {
@@ -198,171 +235,211 @@
       background: var(--pill);
       color: var(--text);
       border-radius: 999px;
-      padding: 12px 16px;
+      padding: 8px 13px;
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+      transition: background var(--t);
     }
 
+    .pill:disabled { cursor: default; }
+    .pill:not(:disabled):hover { background: rgba(255,255,255,0.1); }
+
+    /* ── Timer ────────────────────────────────────── */
     .timer-box {
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
-      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));
-      padding: 24px 18px;
-      margin-bottom: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      padding: 20px 16px;
+      margin-bottom: 10px;
       text-align: center;
+      transition: border-color 0.4s ease;
+    }
+
+    .timer-box.running {
+      border-color: rgba(34,197,94,0.45);
+      animation: pulseGreen 2s infinite;
+    }
+
+    .timer-box.paused {
+      border-color: rgba(245,158,11,0.4);
     }
 
     .timer-display {
-      font-size: clamp(3rem, 10vw, 5rem);
+      font-size: clamp(2.6rem, 13vw, 5rem);
       line-height: 1;
       font-weight: 800;
       letter-spacing: -0.05em;
-      margin: 0;
+      font-variant-numeric: tabular-nums;
+      transition: color 0.3s ease;
     }
+
+    .timer-display.running { color: var(--green); }
+    .timer-display.paused  { color: var(--amber); }
 
     .timer-status {
       text-align: center;
       color: var(--muted);
-      font-size: 1.1rem;
-      margin: 10px 0 18px;
-      font-weight: 700;
+      margin: 10px 0 14px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.8rem;
     }
 
-    .field,
-    .textarea,
-    .select,
-    .button {
+    /* ── Inputs ───────────────────────────────────── */
+    .field, .textarea, .button {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: var(--radius-md);
       background: var(--card-2);
       color: var(--text);
-      padding: 16px 18px;
+      padding: 14px 16px;
       font-size: 1rem;
+      font-family: inherit;
       outline: none;
+      transition: border-color var(--t), box-shadow var(--t);
     }
+
+    .field:focus, .textarea:focus {
+      border-color: rgba(96,165,250,0.5);
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.12);
+    }
+
+    .field::placeholder, .textarea::placeholder { color: var(--muted); }
 
     .textarea {
-      min-height: 130px;
+      min-height: 100px;
       resize: vertical;
-    }
-
-    .field::placeholder,
-    .textarea::placeholder {
-      color: var(--muted);
+      line-height: 1.5;
     }
 
     .row-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 12px;
+      gap: 10px;
+      margin-top: 10px;
     }
 
     .row-stack {
       display: grid;
-      gap: 12px;
-      margin-top: 12px;
+      gap: 10px;
+      margin-top: 10px;
     }
 
+    /* ── Action buttons ───────────────────────────── */
     .actions {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
+      gap: 10px;
       margin-top: 14px;
     }
 
+    /* ── Buttons ──────────────────────────────────── */
     .button {
+      min-height: 50px;
       font-weight: 800;
+      font-size: 0.95rem;
       cursor: pointer;
+      border-radius: var(--radius-md);
+      transition: opacity var(--t), transform var(--t), box-shadow var(--t);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
     }
+
+    .button:hover  { opacity: 0.9; transform: translateY(-1px); }
+    .button:active { transform: scale(0.97); opacity: 1; }
 
     .button.green {
-      background: linear-gradient(180deg, rgba(34,197,94,0.94), rgba(22,163,74,0.95));
-      color: white;
-      border: none;
+      background: linear-gradient(160deg, #22c55e, #16a34a);
+      color: #fff; border: none;
+      box-shadow: 0 4px 18px rgba(34,197,94,0.28);
     }
-
     .button.amber {
-      background: linear-gradient(180deg, rgba(245,158,11,0.94), rgba(217,119,6,0.95));
-      color: white;
-      border: none;
+      background: linear-gradient(160deg, #f59e0b, #d97706);
+      color: #fff; border: none;
+      box-shadow: 0 4px 18px rgba(245,158,11,0.28);
     }
-
     .button.red {
-      background: linear-gradient(180deg, rgba(239,68,68,0.96), rgba(220,38,38,0.96));
-      color: white;
-      border: none;
+      background: linear-gradient(160deg, #ef4444, #dc2626);
+      color: #fff; border: none;
+      box-shadow: 0 4px 18px rgba(239,68,68,0.28);
     }
-
     .button.blue {
-      background: linear-gradient(180deg, rgba(59,130,246,0.95), rgba(37,99,235,0.95));
-      color: white;
-      border: none;
+      background: linear-gradient(160deg, #3b82f6, #2563eb);
+      color: #fff; border: none;
+      box-shadow: 0 4px 18px rgba(59,130,246,0.28);
     }
 
+    /* ── Stats grid ───────────────────────────────── */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 12px;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
     }
 
     .mini-stat {
       border: 1px solid var(--line);
-      border-radius: 20px;
+      border-radius: var(--radius-md);
       background: var(--pill);
       padding: 14px;
+      transition: background var(--t);
     }
+
+    .mini-stat:hover { background: rgba(255,255,255,0.08); }
+    body.light .mini-stat:hover { background: rgba(15,23,42,0.07); }
 
     .mini-stat .label {
       color: var(--muted);
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       text-transform: uppercase;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.16em;
       font-weight: 800;
       margin-bottom: 6px;
     }
 
     .mini-stat .value {
-      font-size: 1.8rem;
+      font-size: clamp(1.4rem, 4vw, 1.9rem);
       font-weight: 800;
       letter-spacing: -0.04em;
+      font-variant-numeric: tabular-nums;
     }
 
-    .section-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-
-    .section-title h3 {
-      margin: 0;
-      font-size: 1.7rem;
-      letter-spacing: -0.04em;
-    }
-
+    /* ── Chart and tool cards ─────────────────────── */
     .chart-card {
-      margin-top: 18px;
       padding: 18px;
       border-radius: var(--radius-lg);
       border: 1px solid var(--line);
       background: var(--card);
       box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      animation: fadeUp 0.4s 0.1s ease both;
     }
 
+    /* ── Bottom two-col grid ──────────────────────── */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    /* ── Bar chart ────────────────────────────────── */
     .chart-wrap {
-      height: 230px;
-      border-radius: 20px;
+      height: 180px;
+      border-radius: var(--radius-md);
       border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-      padding: 18px 14px 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      padding: 14px 10px 10px;
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 10px;
+      gap: 6px;
       align-items: end;
     }
 
@@ -370,230 +447,246 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 5px;
+      height: 100%;
       min-width: 0;
     }
 
     .bar-value {
       color: var(--muted);
-      font-size: 0.8rem;
+      font-size: 0.68rem;
       font-weight: 700;
+      white-space: nowrap;
+      min-height: 13px;
     }
 
     .bar-track {
+      flex: 1;
       width: 100%;
-      height: 150px;
       display: flex;
-      align-items: end;
+      align-items: flex-end;
       justify-content: center;
     }
 
     .bar {
-      width: 80%;
-      border-radius: 16px 16px 8px 8px;
-      background: linear-gradient(180deg, rgba(96,165,250,0.96), rgba(59,130,246,0.92));
-      min-height: 8px;
-      box-shadow: 0 12px 30px rgba(37, 99, 235, 0.25);
+      width: 65%;
+      border-radius: 6px 6px 3px 3px;
+      background: linear-gradient(180deg, rgba(96,165,250,0.9), rgba(59,130,246,0.85));
+      min-height: 3px;
+    }
+
+    .bar-today {
+      background: linear-gradient(180deg, #22c55e, #16a34a);
+      box-shadow: 0 4px 14px rgba(34,197,94,0.35);
     }
 
     .bar-label {
       color: var(--muted);
-      font-size: 0.85rem;
+      font-size: 0.72rem;
       font-weight: 700;
     }
 
+    .bar-label-today { color: var(--green); }
+
+    /* ── Tools ────────────────────────────────────── */
     .tool-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 10px;
     }
 
     .helper-text {
       color: var(--muted);
-      line-height: 1.45;
-      font-size: 0.96rem;
+      line-height: 1.5;
+      font-size: 0.9rem;
       margin-top: 12px;
     }
 
-    .session-list {
-      display: grid;
-      gap: 12px;
-    }
+    /* ── Session list ─────────────────────────────── */
+    .session-list { display: grid; gap: 10px; }
 
-    .empty {
+    .empty-state {
       color: var(--muted);
       border: 1px solid var(--line);
-      border-radius: 20px;
+      border-radius: var(--radius-md);
       background: var(--card);
-      padding: 22px;
+      padding: 24px;
+      text-align: center;
+      font-size: 0.95rem;
     }
 
-    .session-item {
+    .session-card {
       border: 1px solid var(--line);
-      border-radius: 24px;
+      border-radius: var(--radius-lg);
       background: var(--card);
-      padding: 18px;
-      box-shadow: var(--shadow);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow var(--t), transform var(--t);
+      animation: fadeUp 0.3s ease both;
     }
 
-    .session-head {
+    .session-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+
+    .session-top {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
       align-items: flex-start;
-      margin-bottom: 8px;
+      gap: 10px;
     }
 
     .session-title {
-      margin: 0;
-      font-size: 1.8rem;
-      letter-spacing: -0.04em;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 3px;
     }
 
-    .session-duration {
-      border: 1px solid rgba(96,165,250,0.35);
-      background: rgba(59,130,246,0.15);
-      color: #bfdbfe;
-      padding: 10px 14px;
+    .session-meta  { font-size: 0.87rem; color: var(--muted); margin-bottom: 2px; }
+    .session-date  { font-size: 0.8rem; color: var(--muted); opacity: 0.75; }
+
+    .session-hours {
+      background: rgba(96,165,250,0.13);
+      border: 1px solid rgba(96,165,250,0.28);
+      color: var(--blue);
+      padding: 7px 11px;
       border-radius: 999px;
       font-weight: 800;
-      font-size: 1rem;
+      font-size: 0.9rem;
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
-    body.light .session-duration {
-      color: #1d4ed8;
-      background: rgba(96,165,250,0.14);
-    }
+    body.light .session-hours { color: #2563eb; background: rgba(37,99,235,0.1); }
 
-    .session-meta,
     .session-notes {
       color: var(--muted);
-      font-size: 1rem;
+      font-size: 0.9rem;
       line-height: 1.5;
-      margin-top: 4px;
+      margin-top: 8px;
       white-space: pre-wrap;
       word-break: break-word;
     }
 
-    .session-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 14px;
-    }
-
-    .small-btn {
-      border: 1px solid var(--line);
-      background: var(--pill);
-      color: var(--text);
-      border-radius: 18px;
-      padding: 12px 16px;
-      font-weight: 800;
+    .delete-session-btn {
+      margin-top: 12px;
+      border: 1px solid rgba(239,68,68,0.22);
+      background: rgba(239,68,68,0.09);
+      color: #fca5a5;
+      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      font-weight: 700;
       cursor: pointer;
+      transition: background var(--t), transform var(--t);
+      font-family: inherit;
     }
 
-    .small-btn.delete {
-      background: rgba(239,68,68,0.16);
-      color: #fecaca;
-      border-color: rgba(239,68,68,0.25);
+    .delete-session-btn:hover  { background: rgba(239,68,68,0.2); }
+    .delete-session-btn:active { transform: scale(0.95); }
+    body.light .delete-session-btn { color: #b91c1c; }
+
+    /* ── Install button (fixed overlay) ──────────── */
+    #installBtn {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      padding: 16px;
+      font-size: 1rem;
+      font-weight: 800;
+      font-family: inherit;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #fff;
+      border: none;
+      z-index: 9999;
+      cursor: pointer;
+      box-shadow: 0 8px 32px rgba(34,197,94,0.38);
+      transition: transform var(--t), box-shadow var(--t);
     }
 
-    body.light .small-btn.delete {
-      color: #b91c1c;
-    }
+    #installBtn:hover  { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(34,197,94,0.5); }
+    #installBtn:active { transform: scale(0.97); }
 
-    .footer-note {
-      text-align: center;
-      color: var(--muted);
-      margin-top: 18px;
-      font-size: 0.95rem;
-      line-height: 1.5;
-    }
-
+    /* ── Toast ────────────────────────────────────── */
     .toast {
       position: fixed;
       left: 50%;
-      bottom: 22px;
-      transform: translateX(-50%) translateY(18px);
-      background: rgba(15, 23, 42, 0.92);
+      bottom: 24px;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(15, 23, 42, 0.96);
       color: #fff;
-      padding: 14px 18px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.08);
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255,255,255,0.1);
       box-shadow: var(--shadow);
       opacity: 0;
       pointer-events: none;
-      transition: 0.25s ease;
-      z-index: 1000;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      z-index: 10000;
       text-align: center;
-      max-width: min(92vw, 520px);
+      max-width: min(92vw, 480px);
       font-weight: 700;
+      font-size: 0.93rem;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
 
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Auth helper text ─────────────────────────── */
+    .helper-text#authText { margin-top: 14px; }
+
+    /* ── Cloud status pill ────────────────────────── */
+    #cloudStatus {
+      font-size: 0.8rem;
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .hidden {
-      display: none !important;
+    /* ── Footer ───────────────────────────────────── */
+    .footer-note {
+      text-align: center;
+      color: var(--muted);
+      margin-top: 20px;
+      font-size: 0.88rem;
+      line-height: 1.55;
     }
 
-    input[type="file"] {
-      display: none;
+    /* ── Utility ──────────────────────────────────── */
+    .hidden { display: none !important; }
+    input[type="file"] { display: none; }
+
+    /* ── Tablet 600px+ ────────────────────────────── */
+    @media (min-width: 600px) {
+      body { padding: 22px 22px 56px; }
+      .hero { padding: 24px; margin-bottom: 20px; }
+      .card { padding: 22px; }
+      .chart-card { padding: 22px; }
+      .logo { width: 68px; height: 68px; flex: 0 0 68px; font-size: 34px; border-radius: 22px; }
+      .theme-btn { width: 58px; height: 58px; flex: 0 0 58px; font-size: 26px; }
+      .stats-grid { grid-template-columns: repeat(4, 1fr); }
+      .chart-wrap { height: 210px; }
+      .actions { gap: 12px; }
     }
 
-    @media (max-width: 980px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
+    /* ── Desktop 900px+ ───────────────────────────── */
+    @media (min-width: 900px) {
+      body { padding: 28px 32px 56px; }
+      .hero { padding: 28px; margin-bottom: 22px; }
+      .grid { grid-template-columns: 1.35fr 1fr; gap: 18px; }
+      .bottom-grid { grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+      .chart-card { padding: 24px; }
+      .chart-wrap { height: 230px; gap: 8px; }
+      .logo { width: 78px; height: 78px; flex: 0 0 78px; font-size: 40px; }
+      .theme-btn { width: 64px; height: 64px; flex: 0 0 64px; font-size: 28px; }
     }
 
-    @media (max-width: 640px) {
-      body {
-        padding: 16px 12px 34px;
-      }
-
-      .hero {
-        padding: 16px;
-      }
-
-      .hero-top {
-        flex-direction: column;
-      }
-
-      .brand {
-        align-items: center;
-      }
-
-      .logo {
-        width: 78px;
-        height: 78px;
-      }
-
-      .theme-btn {
-        width: 74px;
-        height: 74px;
-      }
-
-      .actions,
-      .tool-grid,
-      .row-2 {
-        grid-template-columns: 1fr;
-      }
-
-      .stats-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .session-head {
-        flex-direction: column;
-      }
+    /* ── Large 1100px+ ────────────────────────────── */
+    @media (min-width: 1100px) {
+      body { padding: 32px 40px 64px; }
     }
   </style>
 </head>
@@ -608,7 +701,6 @@
             <p>App-store style study dashboard</p>
           </div>
         </div>
-
         <button class="theme-btn" id="themeBtn" title="Toggle theme">🌙</button>
       </div>
 
@@ -617,18 +709,17 @@
           <div class="section-label">Focus Engine</div>
           <h2 class="hero-title">Build streaks. Track hours. Feel like a real app.</h2>
           <div class="hero-copy">
-            Timer, sessions, goals, charts, export, import, install, offline support, and optional cloud sync.
+            Timer, sessions, goals, charts, export, import, offline support, and optional cloud sync.
           </div>
 
           <div class="pill-row">
-            <button class="pill" id="installBtn" type="button" style="display:none;">Install App</button>
             <button class="pill" type="button" disabled>PWA</button>
             <button class="pill" type="button" disabled>Offline</button>
             <button class="pill" type="button" disabled>Export</button>
             <button class="pill" type="button" disabled>Firebase Ready</button>
           </div>
 
-          <div class="timer-box">
+          <div class="timer-box" id="timerBox">
             <h2 class="timer-display" id="timerDisplay">00:00:00</h2>
           </div>
 
@@ -637,7 +728,7 @@
           <input class="field" id="studyTitle" placeholder="Session title — ex: Google IT Networking Module 5" />
 
           <div class="row-2">
-            <input class="field" id="studyCategory" placeholder="Category — ex: Google IT / Codecademy" />
+            <input class="field" id="studyCategory" placeholder="Category — ex: Google IT" />
             <input class="field" id="focusRating" placeholder="Focus 1–5" inputmode="numeric" />
           </div>
 
@@ -648,7 +739,7 @@
           <div class="actions">
             <button class="button green" id="startBtn" type="button">Start</button>
             <button class="button amber" id="pauseBtn" type="button">Pause</button>
-            <button class="button red" id="stopBtn" type="button">Stop & Save</button>
+            <button class="button red"   id="stopBtn"  type="button">Stop & Save</button>
           </div>
         </div>
 
@@ -684,7 +775,7 @@
 
           <div class="row-stack">
             <button class="button" id="notifyBtn" type="button">Enable Notifications</button>
-            <button class="button" id="syncBtn" type="button">Push Local → Cloud</button>
+            <button class="button" id="syncBtn"   type="button">Push Local → Cloud</button>
           </div>
 
           <div class="section-title" style="margin-top:18px;">
@@ -692,13 +783,13 @@
           </div>
 
           <div class="row-stack">
-            <input class="field" id="emailInput" type="email" placeholder="Email" />
+            <input class="field" id="emailInput"    type="email"    placeholder="Email" />
             <input class="field" id="passwordInput" type="password" placeholder="Password" />
           </div>
 
-          <div class="row-2" style="margin-top:12px;">
+          <div class="row-2" style="margin-top:10px;">
             <button class="button" id="signupBtn" type="button">Sign Up</button>
-            <button class="button" id="loginBtn" type="button">Login</button>
+            <button class="button" id="loginBtn"  type="button">Login</button>
           </div>
 
           <div class="row-stack">
@@ -712,7 +803,7 @@
       </div>
     </div>
 
-    <div class="grid">
+    <div class="bottom-grid">
       <div class="chart-card">
         <div class="section-title">
           <h3>Last 7 Days</h3>
@@ -728,7 +819,7 @@
         <div class="tool-grid">
           <button class="button" id="exportBtn" type="button">Export JSON</button>
           <button class="button" id="importBtn" type="button">Import JSON</button>
-          <button class="button" id="seedBtn" type="button">Add Demo Data</button>
+          <button class="button" id="seedBtn"   type="button">Add Demo Data</button>
           <button class="button red" id="clearBtn" type="button">Clear All Data</button>
         </div>
 
@@ -740,7 +831,7 @@
       </div>
     </div>
 
-    <div class="chart-card">
+    <div class="chart-card" style="margin-top:14px;">
       <div class="section-title">
         <h3>Recent Sessions</h3>
         <span class="pill" id="sessionCount">0 sessions</span>
@@ -749,10 +840,11 @@
     </div>
 
     <div class="footer-note">
-      Built to feel polished on desktop and mobile. Install it on your phone from Chrome/Samsung Internet after deployment.
+      Built to feel polished on desktop and mobile. Install it on your phone from Chrome or Safari after deployment.
     </div>
   </div>
 
+  <button id="installBtn" style="display:none;">Install App</button>
   <div class="toast" id="toast"></div>
 
   <script>
@@ -782,22 +874,5 @@
   </script>
 
   <script defer src="app.js"></script>
-  <button id="installBtn" style="
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  right: 20px;
-  padding: 14px;
-  font-size: 16px;
-  border-radius: 12px;
-  background: linear-gradient(135deg,#4CAF50,#2ecc71);
-  color: white;
-  border: none;
-  z-index: 9999;
-  display: none;
-">
-  Install App
-  </button>
 </body>
 </html>
-

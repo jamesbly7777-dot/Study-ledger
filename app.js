@@ -20,70 +20,46 @@ const state = {
 };
 
 const el = {
-  timerDisplay: document.getElementById("timerDisplay"),
-  timerStatus: document.getElementById("timerStatus"),
-  studyTitle: document.getElementById("studyTitle"),
-  studyCategory: document.getElementById("studyCategory"),
-  focusRating: document.getElementById("focusRating"),
-  studyNotes: document.getElementById("studyNotes"),
-  todayHours: document.getElementById("todayHours"),
-  weekHours: document.getElementById("weekHours"),
-  streakCount: document.getElementById("streakCount"),
-  goalDisplay: document.getElementById("goalDisplay"),
+  timerDisplay:   document.getElementById("timerDisplay"),
+  timerStatus:    document.getElementById("timerStatus"),
+  timerBox:       document.getElementById("timerBox"),
+  studyTitle:     document.getElementById("studyTitle"),
+  studyCategory:  document.getElementById("studyCategory"),
+  focusRating:    document.getElementById("focusRating"),
+  studyNotes:     document.getElementById("studyNotes"),
+  todayHours:     document.getElementById("todayHours"),
+  weekHours:      document.getElementById("weekHours"),
+  streakCount:    document.getElementById("streakCount"),
+  goalDisplay:    document.getElementById("goalDisplay"),
   dailyGoalInput: document.getElementById("dailyGoalInput"),
-  sessionList: document.getElementById("sessionList"),
-  sessionCount: document.getElementById("sessionCount"),
-  hoursChart: document.getElementById("hoursChart"),
-  exportBtn: document.getElementById("exportBtn"),
-  importBtn: document.getElementById("importBtn"),
-  importFile: document.getElementById("importFile"),
-  clearBtn: document.getElementById("clearBtn"),
-  seedBtn: document.getElementById("seedBtn"),
-  saveGoalBtn: document.getElementById("saveGoalBtn"),
-  notifyBtn: document.getElementById("notifyBtn"),
-  themeBtn: document.getElementById("themeBtn"),
-  signupBtn: document.getElementById("signupBtn"),
-  loginBtn: document.getElementById("loginBtn"),
-  logoutBtn: document.getElementById("logoutBtn"),
-  emailInput: document.getElementById("emailInput"),
-  passwordInput: document.getElementById("passwordInput"),
-  authText: document.getElementById("authText"),
-  cloudStatus: document.getElementById("cloudStatus"),
-  syncBtn: document.getElementById("syncBtn"),
-  startBtn: document.getElementById("startBtn"),
-  pauseBtn: document.getElementById("pauseBtn"),
-  stopBtn: document.getElementById("stopBtn"),
-  toast: document.getElementById("toast")
+  sessionList:    document.getElementById("sessionList"),
+  sessionCount:   document.getElementById("sessionCount"),
+  hoursChart:     document.getElementById("hoursChart"),
+  exportBtn:      document.getElementById("exportBtn"),
+  importBtn:      document.getElementById("importBtn"),
+  importFile:     document.getElementById("importFile"),
+  clearBtn:       document.getElementById("clearBtn"),
+  seedBtn:        document.getElementById("seedBtn"),
+  saveGoalBtn:    document.getElementById("saveGoalBtn"),
+  notifyBtn:      document.getElementById("notifyBtn"),
+  themeBtn:       document.getElementById("themeBtn"),
+  signupBtn:      document.getElementById("signupBtn"),
+  loginBtn:       document.getElementById("loginBtn"),
+  logoutBtn:      document.getElementById("logoutBtn"),
+  emailInput:     document.getElementById("emailInput"),
+  passwordInput:  document.getElementById("passwordInput"),
+  authText:       document.getElementById("authText"),
+  cloudStatus:    document.getElementById("cloudStatus"),
+  syncBtn:        document.getElementById("syncBtn"),
+  startBtn:       document.getElementById("startBtn"),
+  pauseBtn:       document.getElementById("pauseBtn"),
+  stopBtn:        document.getElementById("stopBtn"),
+  installBtn:     document.getElementById("installBtn"),
+  toast:          document.getElementById("toast")
 };
 
-function ensureInstallButton() {
-  let btn = document.getElementById("installBtn");
-  if (!btn) {
-    btn = document.createElement("button");
-    btn.id = "installBtn";
-    btn.textContent = "Install App";
-    btn.style.position = "fixed";
-    btn.style.left = "20px";
-    btn.style.right = "20px";
-    btn.style.bottom = "20px";
-    btn.style.padding = "14px";
-    btn.style.fontSize = "16px";
-    btn.style.borderRadius = "12px";
-    btn.style.border = "none";
-    btn.style.color = "white";
-    btn.style.background = "linear-gradient(135deg,#4CAF50,#2ecc71)";
-    btn.style.zIndex = "9999";
-    btn.style.display = "none";
-    document.body.appendChild(btn);
-  }
-  return btn;
-}
-
 function showToast(message) {
-  if (!el.toast) {
-    console.log(message);
-    return;
-  }
+  if (!el.toast) { console.log(message); return; }
   el.toast.textContent = message;
   el.toast.classList.add("show");
   clearTimeout(showToast._timeout);
@@ -95,10 +71,7 @@ function showToast(message) {
 function saveLocalState() {
   localStorage.setItem(
     STORAGE_KEY,
-    JSON.stringify({
-      sessions: state.sessions,
-      dailyGoal: state.dailyGoal
-    })
+    JSON.stringify({ sessions: state.sessions, dailyGoal: state.dailyGoal })
   );
 }
 
@@ -159,12 +132,22 @@ function currentElapsedMs() {
   return state.timer.elapsedMs + (Date.now() - state.timer.startTime);
 }
 
+function updateTimerBoxState() {
+  if (!el.timerBox) return;
+  el.timerBox.classList.toggle("running", state.timer.running && !state.timer.paused);
+  el.timerBox.classList.toggle("paused", state.timer.paused);
+  if (el.timerDisplay) {
+    el.timerDisplay.classList.toggle("running", state.timer.running && !state.timer.paused);
+    el.timerDisplay.classList.toggle("paused", state.timer.paused);
+  }
+}
+
 function renderTimer() {
   if (el.timerDisplay) el.timerDisplay.textContent = formatDuration(currentElapsedMs());
   if (el.timerStatus) {
-    if (!state.timer.running) el.timerStatus.textContent = "Ready";
-    else if (state.timer.paused) el.timerStatus.textContent = "Paused";
-    else el.timerStatus.textContent = "Running";
+    if (!state.timer.running)       el.timerStatus.textContent = "Ready";
+    else if (state.timer.paused)    el.timerStatus.textContent = "Paused";
+    else                            el.timerStatus.textContent = "Running";
   }
 }
 
@@ -194,6 +177,7 @@ function startTimer() {
   }
 
   startTick();
+  updateTimerBoxState();
   renderTimer();
 }
 
@@ -203,6 +187,7 @@ function pauseTimer() {
   state.timer.paused = true;
   state.timer.startTime = null;
   stopTick();
+  updateTimerBoxState();
   renderTimer();
 }
 
@@ -212,6 +197,7 @@ function resetTimer() {
   state.timer.paused = false;
   state.timer.startTime = null;
   state.timer.elapsedMs = 0;
+  updateTimerBoxState();
   renderTimer();
 }
 
@@ -228,24 +214,24 @@ async function stopAndSaveTimer() {
 
   const session = {
     id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-    title: (el.studyTitle?.value || "").trim() || "Study Session",
+    title:    (el.studyTitle?.value    || "").trim() || "Study Session",
     category: (el.studyCategory?.value || "").trim() || "General",
-    focus: (el.focusRating?.value || "").trim(),
-    notes: (el.studyNotes?.value || "").trim(),
-    ms: elapsedMs,
-    hours: hoursFromMs(elapsedMs),
+    focus:    (el.focusRating?.value   || "").trim(),
+    notes:    (el.studyNotes?.value    || "").trim(),
+    ms:       elapsedMs,
+    hours:    hoursFromMs(elapsedMs),
     startedAt: startedAt.toISOString(),
-    endedAt: now.toISOString()
+    endedAt:   now.toISOString()
   };
 
   state.sessions.unshift(session);
   saveLocalState();
   resetTimer();
 
-  if (el.studyTitle) el.studyTitle.value = "";
+  if (el.studyTitle)    el.studyTitle.value    = "";
   if (el.studyCategory) el.studyCategory.value = "";
-  if (el.focusRating) el.focusRating.value = "";
-  if (el.studyNotes) el.studyNotes.value = "";
+  if (el.focusRating)   el.focusRating.value   = "";
+  if (el.studyNotes)    el.studyNotes.value     = "";
 
   renderAll();
   showToast("Session saved");
@@ -291,25 +277,20 @@ function getStreak() {
 }
 
 function renderSnapshot() {
-  if (el.todayHours) el.todayHours.textContent = `${getTodayHours().toFixed(2)}h`;
-  if (el.weekHours) el.weekHours.textContent = `${getWeekHours().toFixed(2)}h`;
-  if (el.streakCount) el.streakCount.textContent = String(getStreak());
-  if (el.goalDisplay) el.goalDisplay.textContent = `${state.dailyGoal.toFixed(2)}h`;
-  if (el.dailyGoalInput) el.dailyGoalInput.value = String(state.dailyGoal);
+  if (el.todayHours)     el.todayHours.textContent   = `${getTodayHours().toFixed(2)}h`;
+  if (el.weekHours)      el.weekHours.textContent     = `${getWeekHours().toFixed(2)}h`;
+  if (el.streakCount)    el.streakCount.textContent   = String(getStreak());
+  if (el.goalDisplay)    el.goalDisplay.textContent   = `${state.dailyGoal.toFixed(2)}h`;
+  if (el.dailyGoalInput) el.dailyGoalInput.value      = String(state.dailyGoal);
   if (el.sessionCount) {
-    el.sessionCount.textContent = `${state.sessions.length} session${state.sessions.length === 1 ? "" : "s"}`;
+    el.sessionCount.textContent =
+      `${state.sessions.length} session${state.sessions.length === 1 ? "" : "s"}`;
   }
 }
 
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (m) => {
-    const map = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;"
-    };
+    const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
     return map[m];
   });
 }
@@ -326,7 +307,6 @@ function renderSessions() {
 
   if (!state.sessions.length) {
     el.sessionList.innerHTML = `<div class="empty-state">No sessions yet. Start your timer and save one.</div>`;
-    bindDeleteButtons();
     return;
   }
 
@@ -334,12 +314,15 @@ function renderSessions() {
     .slice(0, 25)
     .map((s) => {
       const started = new Date(s.startedAt);
+      const focusBadge = s.focus
+        ? `<span style="margin-left:6px;opacity:0.7;">· Focus ${escapeHtml(s.focus)}/5</span>`
+        : "";
       return `
         <div class="session-card">
           <div class="session-top">
-            <div>
+            <div style="min-width:0;">
               <div class="session-title">${escapeHtml(s.title)}</div>
-              <div class="session-meta">${escapeHtml(s.category)}</div>
+              <div class="session-meta">${escapeHtml(s.category)}${focusBadge}</div>
               <div class="session-date">${started.toLocaleString()}</div>
             </div>
             <div class="session-hours">${(s.hours || 0).toFixed(2)}h</div>
@@ -351,10 +334,6 @@ function renderSessions() {
     })
     .join("");
 
-  bindDeleteButtons();
-}
-
-function bindDeleteButtons() {
   document.querySelectorAll(".delete-session-btn").forEach((btn) => {
     btn.addEventListener("click", () => deleteSession(btn.dataset.id));
   });
@@ -362,7 +341,50 @@ function bindDeleteButtons() {
 
 function renderChart() {
   if (!el.hoursChart) return;
-  el.hoursChart.innerHTML = "";
+
+  const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const dayStart = new Date(today);
+    dayStart.setDate(today.getDate() - i);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayStart.getDate() + 1);
+
+    const hours = state.sessions
+      .filter((s) => {
+        const t = new Date(s.startedAt);
+        return t >= dayStart && t < dayEnd;
+      })
+      .reduce((sum, s) => sum + (s.hours || 0), 0);
+
+    days.push({
+      label: DAY_LABELS[dayStart.getDay()],
+      hours,
+      isToday: i === 0
+    });
+  }
+
+  const maxHours = Math.max(...days.map((d) => d.hours), state.dailyGoal, 0.5);
+
+  el.hoursChart.innerHTML = days
+    .map((day) => {
+      const pct = Math.min((day.hours / maxHours) * 100, 100);
+      const height = Math.max(pct, 2);
+      const valueLabel = day.hours > 0 ? day.hours.toFixed(1) : "";
+      return `
+        <div class="bar-col">
+          <div class="bar-value">${escapeHtml(valueLabel)}</div>
+          <div class="bar-track">
+            <div class="bar ${day.isToday ? "bar-today" : ""}" style="height:${height}%"></div>
+          </div>
+          <div class="bar-label ${day.isToday ? "bar-label-today" : ""}">${day.label}</div>
+        </div>
+      `;
+    })
+    .join("");
 }
 
 function renderAll() {
@@ -378,6 +400,7 @@ function saveGoal() {
   state.dailyGoal = value > 0 ? value : 2;
   saveLocalState();
   renderSnapshot();
+  renderChart();
   showToast("Goal saved");
 }
 
@@ -439,8 +462,41 @@ function addDemoData() {
       notes: "Reviewed TCP vs UDP",
       ms: 5400000,
       hours: 1.5,
-      startedAt: new Date(now.getTime() - 86400000).toISOString(),
-      endedAt: new Date(now.getTime() - 32400000).toISOString()
+      startedAt: new Date(now.getTime() - 86400000 * 1).toISOString(),
+      endedAt:   new Date(now.getTime() - 86400000 * 1 + 5400000).toISOString()
+    },
+    {
+      id: String(Date.now()) + "-2",
+      title: "Python Basics",
+      category: "Codecademy",
+      focus: "5",
+      notes: "Lists, dicts, functions",
+      ms: 3600000,
+      hours: 1.0,
+      startedAt: new Date(now.getTime() - 86400000 * 2).toISOString(),
+      endedAt:   new Date(now.getTime() - 86400000 * 2 + 3600000).toISOString()
+    },
+    {
+      id: String(Date.now()) + "-3",
+      title: "SQL Fundamentals",
+      category: "Database",
+      focus: "3",
+      notes: "JOINs and subqueries",
+      ms: 7200000,
+      hours: 2.0,
+      startedAt: new Date(now.getTime() - 86400000 * 4).toISOString(),
+      endedAt:   new Date(now.getTime() - 86400000 * 4 + 7200000).toISOString()
+    },
+    {
+      id: String(Date.now()) + "-4",
+      title: "React Hooks Deep Dive",
+      category: "Frontend",
+      focus: "5",
+      notes: "useEffect, useCallback, useMemo",
+      ms: 4500000,
+      hours: 1.25,
+      startedAt: new Date(now.getTime() - 86400000 * 5).toISOString(),
+      endedAt:   new Date(now.getTime() - 86400000 * 5 + 4500000).toISOString()
     }
   ];
   saveLocalState();
@@ -501,9 +557,7 @@ function initFirebase() {
           : "Firebase ready. Login to sync your sessions.";
       }
       updateCloudStatus();
-      if (user) {
-        await loadFromCloud(true);
-      }
+      if (user) await loadFromCloud(true);
     });
   } catch (err) {
     console.error(err);
@@ -513,23 +567,17 @@ function initFirebase() {
 
 function updateCloudStatus(message) {
   if (!el.cloudStatus) return;
-
-  if (message) {
-    el.cloudStatus.textContent = message;
-    return;
-  }
-
-  if (!state.firebaseReady) el.cloudStatus.textContent = "Firebase not ready";
-  else if (state.user) el.cloudStatus.textContent = `Cloud connected: ${state.user.email}`;
-  else el.cloudStatus.textContent = "Firebase ready";
+  if (message) { el.cloudStatus.textContent = message; return; }
+  if (!state.firebaseReady)  el.cloudStatus.textContent = "Firebase not ready";
+  else if (state.user)       el.cloudStatus.textContent = `☁ ${state.user.email}`;
+  else                       el.cloudStatus.textContent = "Firebase ready";
 }
 
 async function signUp() {
   if (!state.auth) return showToast("Firebase auth not ready");
-  const email = el.emailInput?.value?.trim();
+  const email    = el.emailInput?.value?.trim();
   const password = el.passwordInput?.value?.trim();
   if (!email || !password) return showToast("Enter email and password");
-
   try {
     await state.auth.createUserWithEmailAndPassword(email, password);
     showToast("Account created");
@@ -541,10 +589,9 @@ async function signUp() {
 
 async function login() {
   if (!state.auth) return showToast("Firebase auth not ready");
-  const email = el.emailInput?.value?.trim();
+  const email    = el.emailInput?.value?.trim();
   const password = el.passwordInput?.value?.trim();
   if (!email || !password) return showToast("Enter email and password");
-
   try {
     await state.auth.signInWithEmailAndPassword(email, password);
     showToast("Logged in");
@@ -633,8 +680,6 @@ function bindEvents() {
 }
 
 function initInstallPrompt() {
-  ensureInstallButton();
-
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
@@ -651,34 +696,11 @@ function initInstallPrompt() {
 
   window.addEventListener("appinstalled", () => {
     if (el.installBtn) el.installBtn.style.display = "none";
-    showToast("App installed");
+    showToast("App installed!");
   });
 }
 
-function ensureInstallButton() {
-  if (!el.installBtn) {
-    const btn = document.createElement("button");
-    btn.id = "installBtn";
-    btn.textContent = "Install App";
-    btn.style.position = "fixed";
-    btn.style.left = "20px";
-    btn.style.right = "20px";
-    btn.style.bottom = "20px";
-    btn.style.padding = "14px";
-    btn.style.fontSize = "16px";
-    btn.style.borderRadius = "12px";
-    btn.style.border = "none";
-    btn.style.color = "white";
-    btn.style.background = "linear-gradient(135deg,#4CAF50,#2ecc71)";
-    btn.style.zIndex = "9999";
-    btn.style.display = "none";
-    document.body.appendChild(btn);
-    el.installBtn = btn;
-  }
-}
-
 document.addEventListener("DOMContentLoaded", () => {
-  ensureInstallButton();
   loadLocalState();
   initTheme();
   bindEvents();

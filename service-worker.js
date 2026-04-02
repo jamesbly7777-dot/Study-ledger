@@ -1,10 +1,12 @@
-const CACHE_NAME = "atlas-study-cache-v3";
+const CACHE_NAME = "atlas-study-cache-v4";
 const urlsToCache = [
-  "/Study-ledger/",
-  "/Study-ledger/index.html",
-  "/Study-ledger/app.js",
-  "/Study-ledger/manifest.json",
-  "/Study-ledger/icon.png"
+  "/",
+  "/index.html",
+  "/app.js",
+  "/manifest.json",
+  "/icon.png",
+  "/icon-192.png",
+  "/icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
@@ -19,9 +21,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
+          if (key !== CACHE_NAME) return caches.delete(key);
         })
       )
     )
@@ -31,12 +31,11 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       return (
         cachedResponse ||
-        fetch(event.request).catch(() => caches.match("/Study-ledger/index.html"))
+        fetch(event.request).catch(() => caches.match("/index.html"))
       );
     })
   );
