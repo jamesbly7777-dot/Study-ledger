@@ -11,58 +11,61 @@ const state = {
     paused: false,
     startTime: null,
     elapsedMs: 0,
-    intervalId: null
+    intervalId: null,
   },
   firebaseReady: false,
   user: null,
   auth: null,
-  db: null
+  db: null,
 };
 
 const el = {
-  timerDisplay:   document.getElementById("timerDisplay"),
-  timerStatus:    document.getElementById("timerStatus"),
-  timerBox:       document.getElementById("timerBox"),
-  studyTitle:     document.getElementById("studyTitle"),
-  studyCategory:  document.getElementById("studyCategory"),
-  focusRating:    document.getElementById("focusRating"),
-  studyNotes:     document.getElementById("studyNotes"),
-  todayHours:     document.getElementById("todayHours"),
-  weekHours:      document.getElementById("weekHours"),
-  streakCount:    document.getElementById("streakCount"),
-  goalDisplay:    document.getElementById("goalDisplay"),
+  timerDisplay: document.getElementById("timerDisplay"),
+  timerStatus: document.getElementById("timerStatus"),
+  timerBox: document.getElementById("timerBox"),
+  studyTitle: document.getElementById("studyTitle"),
+  studyCategory: document.getElementById("studyCategory"),
+  focusRating: document.getElementById("focusRating"),
+  studyNotes: document.getElementById("studyNotes"),
+  todayHours: document.getElementById("todayHours"),
+  weekHours: document.getElementById("weekHours"),
+  streakCount: document.getElementById("streakCount"),
+  goalDisplay: document.getElementById("goalDisplay"),
   dailyGoalInput: document.getElementById("dailyGoalInput"),
-  sessionList:    document.getElementById("sessionList"),
-  sessionCount:   document.getElementById("sessionCount"),
-  hoursChart:     document.getElementById("hoursChart"),
-  exportBtn:      document.getElementById("exportBtn"),
-  importBtn:      document.getElementById("importBtn"),
-  importFile:     document.getElementById("importFile"),
-  clearBtn:       document.getElementById("clearBtn"),
-  seedBtn:        document.getElementById("seedBtn"),
-  saveGoalBtn:    document.getElementById("saveGoalBtn"),
-  notifyBtn:      document.getElementById("notifyBtn"),
-  themeBtn:       document.getElementById("themeBtn"),
-  signupBtn:      document.getElementById("signupBtn"),
-  loginBtn:       document.getElementById("loginBtn"),
-  logoutBtn:      document.getElementById("logoutBtn"),
-  emailInput:     document.getElementById("emailInput"),
-  passwordInput:  document.getElementById("passwordInput"),
-  authText:       document.getElementById("authText"),
-  cloudStatus:    document.getElementById("cloudStatus"),
-  syncBtn:        document.getElementById("syncBtn"),
-  startBtn:       document.getElementById("startBtn"),
-  pauseBtn:       document.getElementById("pauseBtn"),
-  stopBtn:        document.getElementById("stopBtn"),
-  installBtn:     document.getElementById("installBtn"),
-  toast:          document.getElementById("toast"),
-  authForm:       document.getElementById("authForm")
+  sessionList: document.getElementById("sessionList"),
+  sessionCount: document.getElementById("sessionCount"),
+  hoursChart: document.getElementById("hoursChart"),
+  exportBtn: document.getElementById("exportBtn"),
+  importBtn: document.getElementById("importBtn"),
+  importFile: document.getElementById("importFile"),
+  clearBtn: document.getElementById("clearBtn"),
+  seedBtn: document.getElementById("seedBtn"),
+  saveGoalBtn: document.getElementById("saveGoalBtn"),
+  notifyBtn: document.getElementById("notifyBtn"),
+  themeBtn: document.getElementById("themeBtn"),
+  signupBtn: document.getElementById("signupBtn"),
+  loginBtn: document.getElementById("loginBtn"),
+  logoutBtn: document.getElementById("logoutBtn"),
+  emailInput: document.getElementById("emailInput"),
+  passwordInput: document.getElementById("passwordInput"),
+  authText: document.getElementById("authText"),
+  cloudStatus: document.getElementById("cloudStatus"),
+  syncBtn: document.getElementById("syncBtn"),
+  startBtn: document.getElementById("startBtn"),
+  pauseBtn: document.getElementById("pauseBtn"),
+  stopBtn: document.getElementById("stopBtn"),
+  installBtn: document.getElementById("installBtn"),
+  toast: document.getElementById("toast"),
+  authForm: document.getElementById("authForm"),
 };
 
 /* ─── Toast ─────────────────────────────────────────────── */
 
 function showToast(message) {
-  if (!el.toast) { console.log(message); return; }
+  if (!el.toast) {
+    console.log(message);
+    return;
+  }
   el.toast.textContent = message;
   el.toast.classList.add("show");
   clearTimeout(showToast._timeout);
@@ -76,7 +79,7 @@ function showToast(message) {
 function saveLocalState() {
   localStorage.setItem(
     STORAGE_KEY,
-    JSON.stringify({ sessions: state.sessions, dailyGoal: state.dailyGoal })
+    JSON.stringify({ sessions: state.sessions, dailyGoal: state.dailyGoal }),
   );
 }
 
@@ -143,28 +146,29 @@ function currentElapsedMs() {
 
 function updateTimerBoxState() {
   const isRunning = state.timer.running && !state.timer.paused;
-  const isPaused  = state.timer.paused;
+  const isPaused = state.timer.paused;
 
   if (el.timerBox) {
     el.timerBox.classList.toggle("running", isRunning);
-    el.timerBox.classList.toggle("paused",  isPaused);
+    el.timerBox.classList.toggle("paused", isPaused);
   }
   if (el.timerDisplay) {
     el.timerDisplay.classList.toggle("running", isRunning);
-    el.timerDisplay.classList.toggle("paused",  isPaused);
+    el.timerDisplay.classList.toggle("paused", isPaused);
   }
   if (el.timerStatus) {
     el.timerStatus.classList.toggle("running", isRunning);
-    el.timerStatus.classList.toggle("paused",  isPaused);
+    el.timerStatus.classList.toggle("paused", isPaused);
   }
 }
 
 function renderTimer() {
-  if (el.timerDisplay) el.timerDisplay.textContent = formatDuration(currentElapsedMs());
+  if (el.timerDisplay)
+    el.timerDisplay.textContent = formatDuration(currentElapsedMs());
   if (el.timerStatus) {
-    if (!state.timer.running)       el.timerStatus.textContent = "Ready";
-    else if (state.timer.paused)    el.timerStatus.textContent = "Paused";
-    else                            el.timerStatus.textContent = "Running";
+    if (!state.timer.running) el.timerStatus.textContent = "Ready";
+    else if (state.timer.paused) el.timerStatus.textContent = "Paused";
+    else el.timerStatus.textContent = "Running";
   }
 }
 
@@ -231,33 +235,34 @@ async function stopAndSaveTimer() {
 
   const session = {
     id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-    title:    (el.studyTitle?.value    || "").trim() || "Study Session",
+    title: (el.studyTitle?.value || "").trim() || "Study Session",
     category: (el.studyCategory?.value || "").trim() || "General",
-    focus:    (el.focusRating?.value   || "").trim(),
-    notes:    (el.studyNotes?.value    || "").trim(),
-    ms:       elapsedMs,
-    hours:    hoursFromMs(elapsedMs),
+    focus: (el.focusRating?.value || "").trim(),
+    notes: (el.studyNotes?.value || "").trim(),
+    ms: elapsedMs,
+    hours: hoursFromMs(elapsedMs),
     startedAt: startedAt.toISOString(),
-    endedAt:   now.toISOString()
+    endedAt: now.toISOString(),
   };
 
   state.sessions.unshift(session);
+  if (state.user) await saveSessionToFirebase(session);
   saveLocalState();
   resetTimer();
 
-  if (el.studyTitle)    el.studyTitle.value    = "";
+  if (el.studyTitle) el.studyTitle.value = "";
   if (el.studyCategory) el.studyCategory.value = "";
-  if (el.focusRating)   el.focusRating.value   = "";
-  if (el.studyNotes)    el.studyNotes.value     = "";
+  if (el.focusRating) el.focusRating.value = "";
+  if (el.studyNotes) el.studyNotes.value = "";
 
   renderAll();
   showToast("Session saved" + (state.user ? " · syncing…" : ""));
 
   // Auto-push to cloud when logged in
-  if (state.user) await pushLocalToCloud(false);
+  // if (state.user) await pushLocalToCloud(false);
 }
 
-/* ─── Stats calculations ─────────────────────────────────── */
+/* ─── Stats calculations ────────────────────── ��──────────── */
 
 function getTodayHours() {
   const start = todayStart();
@@ -278,7 +283,7 @@ function getStreak() {
     state.sessions.map((s) => {
       const d = new Date(s.startedAt);
       return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    })
+    }),
   );
 
   let streak = 0;
@@ -301,20 +306,27 @@ function getStreak() {
 /* ─── Render ─────────────────────────────────────────────── */
 
 function renderSnapshot() {
-  if (el.todayHours)     el.todayHours.textContent   = `${getTodayHours().toFixed(2)}h`;
-  if (el.weekHours)      el.weekHours.textContent     = `${getWeekHours().toFixed(2)}h`;
-  if (el.streakCount)    el.streakCount.textContent   = String(getStreak());
-  if (el.goalDisplay)    el.goalDisplay.textContent   = `${state.dailyGoal.toFixed(2)}h`;
-  if (el.dailyGoalInput) el.dailyGoalInput.value      = String(state.dailyGoal);
+  if (el.todayHours)
+    el.todayHours.textContent = `${getTodayHours().toFixed(2)}h`;
+  if (el.weekHours) el.weekHours.textContent = `${getWeekHours().toFixed(2)}h`;
+  if (el.streakCount) el.streakCount.textContent = String(getStreak());
+  if (el.goalDisplay)
+    el.goalDisplay.textContent = `${state.dailyGoal.toFixed(2)}h`;
+  if (el.dailyGoalInput) el.dailyGoalInput.value = String(state.dailyGoal);
   if (el.sessionCount) {
-    el.sessionCount.textContent =
-      `${state.sessions.length} session${state.sessions.length === 1 ? "" : "s"}`;
+    el.sessionCount.textContent = `${state.sessions.length} session${state.sessions.length === 1 ? "" : "s"}`;
   }
 }
 
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (m) => {
-    const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
+    const map = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    };
     return map[m];
   });
 }
@@ -389,7 +401,7 @@ function renderChart() {
     days.push({
       label: DAY_LABELS[dayStart.getDay()],
       hours,
-      isToday: i === 0
+      isToday: i === 0,
     });
   }
 
@@ -440,9 +452,11 @@ function exportJson() {
   const payload = {
     sessions: state.sessions,
     dailyGoal: state.dailyGoal,
-    exportedAt: new Date().toISOString()
+    exportedAt: new Date().toISOString(),
   };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -496,7 +510,7 @@ function addDemoData() {
       ms: 5400000,
       hours: 1.5,
       startedAt: new Date(now.getTime() - 86400000 * 1).toISOString(),
-      endedAt:   new Date(now.getTime() - 86400000 * 1 + 5400000).toISOString()
+      endedAt: new Date(now.getTime() - 86400000 * 1 + 5400000).toISOString(),
     },
     {
       id: String(Date.now()) + "-2",
@@ -507,7 +521,7 @@ function addDemoData() {
       ms: 3600000,
       hours: 1.0,
       startedAt: new Date(now.getTime() - 86400000 * 2).toISOString(),
-      endedAt:   new Date(now.getTime() - 86400000 * 2 + 3600000).toISOString()
+      endedAt: new Date(now.getTime() - 86400000 * 2 + 3600000).toISOString(),
     },
     {
       id: String(Date.now()) + "-3",
@@ -518,7 +532,7 @@ function addDemoData() {
       ms: 7200000,
       hours: 2.0,
       startedAt: new Date(now.getTime() - 86400000 * 4).toISOString(),
-      endedAt:   new Date(now.getTime() - 86400000 * 4 + 7200000).toISOString()
+      endedAt: new Date(now.getTime() - 86400000 * 4 + 7200000).toISOString(),
     },
     {
       id: String(Date.now()) + "-4",
@@ -529,8 +543,8 @@ function addDemoData() {
       ms: 4500000,
       hours: 1.25,
       startedAt: new Date(now.getTime() - 86400000 * 5).toISOString(),
-      endedAt:   new Date(now.getTime() - 86400000 * 5 + 4500000).toISOString()
-    }
+      endedAt: new Date(now.getTime() - 86400000 * 5 + 4500000).toISOString(),
+    },
   ];
   saveLocalState();
   renderAll();
@@ -545,7 +559,9 @@ async function enableNotifications() {
     return;
   }
   const result = await Notification.requestPermission();
-  showToast(result === "granted" ? "Notifications enabled" : "Notifications denied");
+  showToast(
+    result === "granted" ? "Notifications enabled" : "Notifications denied",
+  );
 }
 
 /* ─── Theme ──────────────────────────────────────────────── */
@@ -576,16 +592,16 @@ function toggleTheme() {
 function parseAuthError(err) {
   const code = err.code || "";
   const map = {
-    "auth/email-already-in-use":   "That email is already registered.",
-    "auth/invalid-email":          "Please enter a valid email address.",
-    "auth/weak-password":          "Password must be at least 6 characters.",
-    "auth/user-not-found":         "No account found with that email.",
-    "auth/wrong-password":         "Incorrect password.",
-    "auth/invalid-credential":     "Incorrect email or password.",
-    "auth/too-many-requests":      "Too many attempts — try again later.",
+    "auth/email-already-in-use": "That email is already registered.",
+    "auth/invalid-email": "Please enter a valid email address.",
+    "auth/weak-password": "Password must be at least 6 characters.",
+    "auth/user-not-found": "No account found with that email.",
+    "auth/wrong-password": "Incorrect password.",
+    "auth/invalid-credential": "Incorrect email or password.",
+    "auth/too-many-requests": "Too many attempts — try again later.",
     "auth/network-request-failed": "Network error. Check your connection.",
-    "auth/user-disabled":          "This account has been disabled.",
-    "auth/operation-not-allowed":  "Email/password sign-in is not enabled."
+    "auth/user-disabled": "This account has been disabled.",
+    "auth/operation-not-allowed": "Email/password sign-in is not enabled.",
   };
   return map[code] || err.message || "Something went wrong.";
 }
@@ -597,7 +613,10 @@ function updateAuthUI() {
 
   // Hide email/password form fields and sign-up/login buttons when logged in
   const showWhenLoggedOut = [
-    el.emailInput, el.passwordInput, el.signupBtn, el.loginBtn
+    el.emailInput,
+    el.passwordInput,
+    el.signupBtn,
+    el.loginBtn,
   ];
   const showWhenLoggedIn = [el.logoutBtn, el.syncBtn];
 
@@ -619,10 +638,13 @@ function updateAuthUI() {
 
 function updateCloudStatus(message) {
   if (!el.cloudStatus) return;
-  if (message) { el.cloudStatus.textContent = message; return; }
-  if (!state.firebaseReady)  el.cloudStatus.textContent = "Offline";
-  else if (state.user)       el.cloudStatus.textContent = `☁ ${state.user.email}`;
-  else                       el.cloudStatus.textContent = "Local mode";
+  if (message) {
+    el.cloudStatus.textContent = message;
+    return;
+  }
+  if (!state.firebaseReady) el.cloudStatus.textContent = "Offline";
+  else if (state.user) el.cloudStatus.textContent = `☁ ${state.user.email}`;
+  else el.cloudStatus.textContent = "Local mode";
 }
 
 function initFirebase() {
@@ -671,51 +693,49 @@ async function pushLocalToCloud(showSuccessToast = false) {
       sessions: state.sessions,
       dailyGoal: state.dailyGoal,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      email: state.user.email
+      email: state.user.email,
     });
     updateCloudStatus();
     if (showSuccessToast) showToast("Synced to cloud ☁");
   } catch (err) {
     console.error(err);
-    if (showSuccessToast) showToast("Cloud sync failed");
   }
 }
 
 async function loadFromCloud(showSuccessToast = false) {
   if (!state.db || !state.user) return;
   try {
-    const doc = await state.db.collection("studySessions").doc(state.user.uid).get();
+    const snapshot = await state.db
+      .collection("users")
+      .doc(state.user.uid)
+      .collection("studySessions")
+      .orderBy("createdAt", "desc")
+      .get();
 
-    if (!doc.exists) {
-      // New user — push existing local data to cloud so it's not lost
-      if (state.sessions.length > 0) {
-        await pushLocalToCloud(false);
-        if (showSuccessToast) showToast("Local data backed up to cloud");
-      } else {
-        if (showSuccessToast) showToast("Signed in — no cloud data yet");
-      }
-      return;
-    }
+    const sessions = [];
+    snapshot.forEach(doc => {
+      sessions.push(doc.data());
+    });
 
-    const data = doc.data() || {};
-    if (Array.isArray(data.sessions)) state.sessions = data.sessions;
-    if (typeof data.dailyGoal === "number" && data.dailyGoal > 0) {
-      state.dailyGoal = data.dailyGoal;
-    }
-    saveLocalState();
+    state.sessions = sessions;
     renderAll();
-    if (showSuccessToast) showToast("Cloud data loaded ☁");
-  } catch (err) {
-    console.error(err);
-    showToast("Could not load cloud data");
-  }
+    return;
+    } catch (err) {
+      console.error(err);
+      if (showSuccessToast) showToast("Cloud sync failed");
+    }
+    }
+   
+
+    
+   
 }
 
 /* ─── Auth actions ───────────────────────────────────────── */
 
 async function signUp() {
   if (!state.auth) return showToast("Firebase not ready");
-  const email    = el.emailInput?.value?.trim();
+  const email = el.emailInput?.value?.trim();
   const password = el.passwordInput?.value?.trim();
   if (!email || !password) return showToast("Enter email and password");
   try {
@@ -733,7 +753,7 @@ async function signUp() {
 
 async function login() {
   if (!state.auth) return showToast("Firebase not ready");
-  const email    = el.emailInput?.value?.trim();
+  const email = el.emailInput?.value?.trim();
   const password = el.passwordInput?.value?.trim();
   if (!email || !password) return showToast("Enter email and password");
   try {
@@ -822,8 +842,31 @@ document.addEventListener("DOMContentLoaded", () => {
   loadLocalState();
   initTheme();
   bindEvents();
-  updateAuthUI();   // set initial UI state (logged-out) before Firebase resolves
+  updateAuthUI(); // set initial UI state (logged-out) before Firebase resolves
   initFirebase();
+  loadSessionsFromFirebase();
   initInstallPrompt();
   renderAll();
 });
+async function saveSessionToFirebase(session) {
+  const user = firebase.auth().currentUser;
+
+  if (!user) {
+    alert("You must be logged in.");
+    return;
+  }
+
+  const uid = user.uid;
+
+  await firebase
+    .firestore()
+    .collection("users")
+    .doc(uid)
+    .collection("studySessions")
+    .add({
+      ...session,
+      createdAt: new Date(),
+    });
+
+  console.log("Saved to user cloud");
+}
