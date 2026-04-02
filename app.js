@@ -792,8 +792,15 @@ function bindEvents() {
   el.seedBtn?.addEventListener("click", addDemoData);
   el.notifyBtn?.addEventListener("click", enableNotifications);
   el.themeBtn?.addEventListener("click", toggleTheme);
-  el.signupBtn?.addEventListener("click", signUp);
-  el.loginBtn?.addEventListener("click", login);
+  el.signupBtn?.addEventListener("click", () => {
+    console.log("SIGNUP CLICKED");
+    signUp();
+  });
+
+  el.loginBtn?.addEventListener("click", () => {
+    console.log("LOGIN CLICKED");
+    login();
+  });
   el.logoutBtn?.addEventListener("click", logout);
   el.syncBtn?.addEventListener("click", () => pushLocalToCloud(true));
 
