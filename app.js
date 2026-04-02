@@ -724,12 +724,9 @@ async function loadFromCloud(showSuccessToast = false) {
       console.error(err);
       if (showSuccessToast) showToast("Cloud sync failed");
     }
-    }
    
-
     
    
-}
 
 /* ─── Auth actions ───────────────────────────────────────── */
 
