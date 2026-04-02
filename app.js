@@ -133,12 +133,20 @@ function currentElapsedMs() {
 }
 
 function updateTimerBoxState() {
-  if (!el.timerBox) return;
-  el.timerBox.classList.toggle("running", state.timer.running && !state.timer.paused);
-  el.timerBox.classList.toggle("paused", state.timer.paused);
+  const isRunning = state.timer.running && !state.timer.paused;
+  const isPaused  = state.timer.paused;
+
+  if (el.timerBox) {
+    el.timerBox.classList.toggle("running", isRunning);
+    el.timerBox.classList.toggle("paused",  isPaused);
+  }
   if (el.timerDisplay) {
-    el.timerDisplay.classList.toggle("running", state.timer.running && !state.timer.paused);
-    el.timerDisplay.classList.toggle("paused", state.timer.paused);
+    el.timerDisplay.classList.toggle("running", isRunning);
+    el.timerDisplay.classList.toggle("paused",  isPaused);
+  }
+  if (el.timerStatus) {
+    el.timerStatus.classList.toggle("running", isRunning);
+    el.timerStatus.classList.toggle("paused",  isPaused);
   }
 }
 
