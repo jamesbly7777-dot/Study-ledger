@@ -55,8 +55,11 @@ const el = {
   pauseBtn:       document.getElementById("pauseBtn"),
   stopBtn:        document.getElementById("stopBtn"),
   installBtn:     document.getElementById("installBtn"),
-  toast:          document.getElementById("toast")
+  toast:          document.getElementById("toast"),
+  authForm:       document.getElementById("authForm")
 };
+
+/* ─── Toast ─────────────────────────────────────────────── */
 
 function showToast(message) {
   if (!el.toast) { console.log(message); return; }
@@ -65,8 +68,10 @@ function showToast(message) {
   clearTimeout(showToast._timeout);
   showToast._timeout = setTimeout(() => {
     el.toast.classList.remove("show");
-  }, 2200);
+  }, 2600);
 }
+
+/* ─── Local persistence ──────────────────────────────────── */
 
 function saveLocalState() {
   localStorage.setItem(
@@ -89,6 +94,8 @@ function loadLocalState() {
     console.error(err);
   }
 }
+
+/* ─── Time utilities ─────────────────────────────────────── */
 
 function formatDuration(ms) {
   const totalSeconds = Math.floor(ms / 1000);
@@ -124,6 +131,8 @@ function weekStart() {
   d.setHours(0, 0, 0, 0);
   return d;
 }
+
+/* ─── Timer ──────────────────────────────────────────────── */
 
 function currentElapsedMs() {
   if (!state.timer.running) return state.timer.elapsedMs;
@@ -242,8 +251,13 @@ async function stopAndSaveTimer() {
   if (el.studyNotes)    el.studyNotes.value     = "";
 
   renderAll();
-  showToast("Session saved");
+  showToast("Session saved" + (state.user ? " · syncing…" : ""));
+
+  // Auto-push to cloud when logged in
+  if (state.user) await pushLocalToCloud(false);
 }
+
+/* ─── Stats calculations ─────────────────────────────────── */
 
 function getTodayHours() {
   const start = todayStart();
@@ -284,6 +298,8 @@ function getStreak() {
   return streak;
 }
 
+/* ─── Render ─────────────────────────────────────────────── */
+
 function renderSnapshot() {
   if (el.todayHours)     el.todayHours.textContent   = `${getTodayHours().toFixed(2)}h`;
   if (el.weekHours)      el.weekHours.textContent     = `${getWeekHours().toFixed(2)}h`;
@@ -308,6 +324,8 @@ function deleteSession(id) {
   saveLocalState();
   renderAll();
   showToast("Session deleted");
+  // Auto-push to cloud when logged in
+  if (state.user) pushLocalToCloud(false);
 }
 
 function renderSessions() {
@@ -403,14 +421,20 @@ function renderAll() {
   updateCloudStatus();
 }
 
-function saveGoal() {
+/* ─── Goal ───────────────────────────────────────────────── */
+
+async function saveGoal() {
   const value = Number(el.dailyGoalInput?.value || 2);
   state.dailyGoal = value > 0 ? value : 2;
   saveLocalState();
   renderSnapshot();
   renderChart();
   showToast("Goal saved");
+  // Auto-push to cloud when logged in
+  if (state.user) await pushLocalToCloud(false);
 }
+
+/* ─── Export / Import / Clear / Demo ────────────────────── */
 
 function exportJson() {
   const payload = {
@@ -431,7 +455,7 @@ function exportJson() {
 function importJson(file) {
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
       const parsed = JSON.parse(String(reader.result));
       state.sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
@@ -442,6 +466,7 @@ function importJson(file) {
       saveLocalState();
       renderAll();
       showToast("Imported backup");
+      if (state.user) await pushLocalToCloud(false);
     } catch (err) {
       console.error(err);
       showToast("Import failed");
@@ -512,6 +537,8 @@ function addDemoData() {
   showToast("Demo data added");
 }
 
+/* ─── Notifications ──────────────────────────────────────── */
+
 async function enableNotifications() {
   if (!("Notification" in window)) {
     showToast("Notifications not supported");
@@ -520,6 +547,8 @@ async function enableNotifications() {
   const result = await Notification.requestPermission();
   showToast(result === "granted" ? "Notifications enabled" : "Notifications denied");
 }
+
+/* ─── Theme ──────────────────────────────────────────────── */
 
 function applyTheme(theme) {
   if (theme === "light") {
@@ -542,6 +571,60 @@ function toggleTheme() {
   applyTheme(next);
 }
 
+/* ─── Firebase auth error → human message ────────────────── */
+
+function parseAuthError(err) {
+  const code = err.code || "";
+  const map = {
+    "auth/email-already-in-use":   "That email is already registered.",
+    "auth/invalid-email":          "Please enter a valid email address.",
+    "auth/weak-password":          "Password must be at least 6 characters.",
+    "auth/user-not-found":         "No account found with that email.",
+    "auth/wrong-password":         "Incorrect password.",
+    "auth/invalid-credential":     "Incorrect email or password.",
+    "auth/too-many-requests":      "Too many attempts — try again later.",
+    "auth/network-request-failed": "Network error. Check your connection.",
+    "auth/user-disabled":          "This account has been disabled.",
+    "auth/operation-not-allowed":  "Email/password sign-in is not enabled."
+  };
+  return map[code] || err.message || "Something went wrong.";
+}
+
+/* ─── Auth UI state ──────────────────────────────────────── */
+
+function updateAuthUI() {
+  const loggedIn = !!state.user;
+
+  // Hide email/password form fields and sign-up/login buttons when logged in
+  const showWhenLoggedOut = [
+    el.emailInput, el.passwordInput, el.signupBtn, el.loginBtn
+  ];
+  const showWhenLoggedIn = [el.logoutBtn, el.syncBtn];
+
+  showWhenLoggedOut.forEach((node) => {
+    if (node) node.style.display = loggedIn ? "none" : "";
+  });
+  showWhenLoggedIn.forEach((node) => {
+    if (node) node.style.display = loggedIn ? "" : "none";
+  });
+
+  if (el.authText) {
+    el.authText.textContent = loggedIn
+      ? `Signed in as ${state.user.email}`
+      : "Create an account or login to sync your sessions across devices.";
+  }
+}
+
+/* ─── Firebase init ──────────────────────────────────────── */
+
+function updateCloudStatus(message) {
+  if (!el.cloudStatus) return;
+  if (message) { el.cloudStatus.textContent = message; return; }
+  if (!state.firebaseReady)  el.cloudStatus.textContent = "Offline";
+  else if (state.user)       el.cloudStatus.textContent = `☁ ${state.user.email}`;
+  else                       el.cloudStatus.textContent = "Local mode";
+}
+
 function initFirebase() {
   try {
     if (typeof firebase === "undefined" || !window.FIREBASE_CONFIG) {
@@ -559,53 +642,110 @@ function initFirebase() {
 
     state.auth.onAuthStateChanged(async (user) => {
       state.user = user || null;
-      if (el.authText) {
-        el.authText.textContent = user
-          ? `Logged in as ${user.email}`
-          : "Firebase ready. Login to sync your sessions.";
-      }
       updateCloudStatus();
-      if (user) await loadFromCloud(true);
+      updateAuthUI();
+
+      if (user) {
+        await loadFromCloud(true);
+      } else {
+        // Restore local state on logout
+        loadLocalState();
+        renderAll();
+      }
     });
   } catch (err) {
     console.error(err);
-    updateCloudStatus("Firebase setup failed");
+    updateCloudStatus("Firebase error");
   }
 }
 
-function updateCloudStatus(message) {
-  if (!el.cloudStatus) return;
-  if (message) { el.cloudStatus.textContent = message; return; }
-  if (!state.firebaseReady)  el.cloudStatus.textContent = "Firebase not ready";
-  else if (state.user)       el.cloudStatus.textContent = `☁ ${state.user.email}`;
-  else                       el.cloudStatus.textContent = "Firebase ready";
+/* ─── Cloud sync ─────────────────────────────────────────── */
+
+async function pushLocalToCloud(showSuccessToast = false) {
+  if (!state.db || !state.user) {
+    if (showSuccessToast) showToast("Login first to sync");
+    return;
+  }
+  try {
+    await state.db.collection("studySessions").doc(state.user.uid).set({
+      sessions: state.sessions,
+      dailyGoal: state.dailyGoal,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      email: state.user.email
+    });
+    updateCloudStatus();
+    if (showSuccessToast) showToast("Synced to cloud ☁");
+  } catch (err) {
+    console.error(err);
+    if (showSuccessToast) showToast("Cloud sync failed");
+  }
 }
 
+async function loadFromCloud(showSuccessToast = false) {
+  if (!state.db || !state.user) return;
+  try {
+    const doc = await state.db.collection("studySessions").doc(state.user.uid).get();
+
+    if (!doc.exists) {
+      // New user — push existing local data to cloud so it's not lost
+      if (state.sessions.length > 0) {
+        await pushLocalToCloud(false);
+        if (showSuccessToast) showToast("Local data backed up to cloud");
+      } else {
+        if (showSuccessToast) showToast("Signed in — no cloud data yet");
+      }
+      return;
+    }
+
+    const data = doc.data() || {};
+    if (Array.isArray(data.sessions)) state.sessions = data.sessions;
+    if (typeof data.dailyGoal === "number" && data.dailyGoal > 0) {
+      state.dailyGoal = data.dailyGoal;
+    }
+    saveLocalState();
+    renderAll();
+    if (showSuccessToast) showToast("Cloud data loaded ☁");
+  } catch (err) {
+    console.error(err);
+    showToast("Could not load cloud data");
+  }
+}
+
+/* ─── Auth actions ───────────────────────────────────────── */
+
 async function signUp() {
-  if (!state.auth) return showToast("Firebase auth not ready");
+  if (!state.auth) return showToast("Firebase not ready");
   const email    = el.emailInput?.value?.trim();
   const password = el.passwordInput?.value?.trim();
   if (!email || !password) return showToast("Enter email and password");
   try {
+    el.signupBtn && (el.signupBtn.disabled = true);
     await state.auth.createUserWithEmailAndPassword(email, password);
-    showToast("Account created");
+    if (el.passwordInput) el.passwordInput.value = "";
+    showToast("Account created — welcome!");
   } catch (err) {
     console.error(err);
-    showToast(err.message || "Signup failed");
+    showToast(parseAuthError(err));
+  } finally {
+    el.signupBtn && (el.signupBtn.disabled = false);
   }
 }
 
 async function login() {
-  if (!state.auth) return showToast("Firebase auth not ready");
+  if (!state.auth) return showToast("Firebase not ready");
   const email    = el.emailInput?.value?.trim();
   const password = el.passwordInput?.value?.trim();
   if (!email || !password) return showToast("Enter email and password");
   try {
+    el.loginBtn && (el.loginBtn.disabled = true);
     await state.auth.signInWithEmailAndPassword(email, password);
+    if (el.passwordInput) el.passwordInput.value = "";
     showToast("Logged in");
   } catch (err) {
     console.error(err);
-    showToast(err.message || "Login failed");
+    showToast(parseAuthError(err));
+  } finally {
+    el.loginBtn && (el.loginBtn.disabled = false);
   }
 }
 
@@ -620,46 +760,7 @@ async function logout() {
   }
 }
 
-async function pushLocalToCloud(showSuccessToast = false) {
-  if (!state.db || !state.user) {
-    if (!showSuccessToast) showToast("Login first to sync");
-    return;
-  }
-  try {
-    await state.db.collection("studySessions").doc(state.user.uid).set({
-      sessions: state.sessions,
-      dailyGoal: state.dailyGoal,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      email: state.user.email
-    });
-    if (showSuccessToast) showToast("Synced to cloud");
-  } catch (err) {
-    console.error(err);
-    showToast("Cloud sync failed");
-  }
-}
-
-async function loadFromCloud(showSuccessToast = false) {
-  if (!state.db || !state.user) return;
-  try {
-    const doc = await state.db.collection("studySessions").doc(state.user.uid).get();
-    if (!doc.exists) {
-      if (showSuccessToast) showToast("No cloud data found");
-      return;
-    }
-    const data = doc.data() || {};
-    if (Array.isArray(data.sessions)) state.sessions = data.sessions;
-    if (typeof data.dailyGoal === "number" && data.dailyGoal > 0) {
-      state.dailyGoal = data.dailyGoal;
-    }
-    saveLocalState();
-    renderAll();
-    if (showSuccessToast) showToast("Cloud data loaded");
-  } catch (err) {
-    console.error(err);
-    showToast("Cloud load failed");
-  }
-}
+/* ─── Events ─────────────────────────────────────────────── */
 
 function bindEvents() {
   el.startBtn?.addEventListener("click", startTimer);
@@ -676,6 +777,11 @@ function bindEvents() {
   el.logoutBtn?.addEventListener("click", logout);
   el.syncBtn?.addEventListener("click", () => pushLocalToCloud(true));
 
+  // Allow Enter key to log in from password field
+  el.passwordInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") login();
+  });
+
   if (el.importBtn && el.importFile) {
     el.importBtn.addEventListener("click", () => el.importFile.click());
   }
@@ -686,6 +792,8 @@ function bindEvents() {
     e.target.value = "";
   });
 }
+
+/* ─── Install prompt ─────────────────────────────────────── */
 
 function initInstallPrompt() {
   window.addEventListener("beforeinstallprompt", (e) => {
@@ -708,10 +816,13 @@ function initInstallPrompt() {
   });
 }
 
+/* ─── Boot ───────────────────────────────────────────────── */
+
 document.addEventListener("DOMContentLoaded", () => {
   loadLocalState();
   initTheme();
   bindEvents();
+  updateAuthUI();   // set initial UI state (logged-out) before Firebase resolves
   initFirebase();
   initInstallPrompt();
   renderAll();
