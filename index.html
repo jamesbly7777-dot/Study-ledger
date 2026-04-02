@@ -852,35 +852,32 @@
     .ab-stop:hover { box-shadow: 0 6px 28px rgba(239,68,68,0.52), inset 0 1px 0 rgba(255,255,255,0.22); }
 
     /* ═══════════════════════════════════════════
-       INSTALL CTA
+       INSTALL CTA — inline, no fixed overlap
     ═══════════════════════════════════════════ */
     #installBtn {
-      position: fixed;
-      bottom: calc(82px + env(safe-area-inset-bottom));
-      left: 50%;
-      transform: translateX(-50%);
-      width: calc(100% - 28px);
+      display: none; /* JS sets display:block when prompt is ready */
+      width: 100%;
       max-width: 480px;
-      padding: 17px 20px;
-      font-size: 1rem;
+      margin: 20px auto 0;
+      padding: 15px 22px;
+      font-size: 0.97rem;
       font-weight: 800;
       font-family: inherit;
       border-radius: var(--r-xl);
-      background: linear-gradient(135deg, #22c55e, #16a34a);
+      background: linear-gradient(150deg, #22c55e, #16a34a);
       color: #fff;
-      border: 1px solid rgba(255,255,255,0.18);
-      z-index: 201;
+      border: 1px solid rgba(255,255,255,0.16);
       cursor: pointer;
       box-shadow:
-        0 10px 36px rgba(34,197,94,0.45),
-        inset 0 1px 0 rgba(255,255,255,0.25);
+        0 4px 18px rgba(34,197,94,0.28),
+        inset 0 1px 0 rgba(255,255,255,0.22);
       transition: transform var(--t-fast), box-shadow var(--t-fast);
       -webkit-appearance: none;
       text-align: center;
     }
 
-    #installBtn:hover  { transform: translateX(-50%) translateY(-2px); box-shadow: 0 14px 44px rgba(34,197,94,0.58), inset 0 1px 0 rgba(255,255,255,0.25); }
-    #installBtn:active { transform: translateX(-50%) scale(0.97); }
+    #installBtn:hover  { transform: translateY(-1px); box-shadow: 0 8px 26px rgba(34,197,94,0.38), inset 0 1px 0 rgba(255,255,255,0.22); }
+    #installBtn:active { transform: scale(0.97); }
 
     /* ═══════════════════════════════════════════
        TOAST
@@ -973,8 +970,7 @@
       .actions    { display: grid; }
       .action-bar { display: none; }
 
-      #installBtn { bottom: 28px; }
-      .toast      { bottom: 40px; }
+      .toast { bottom: 36px; }
     }
 
     /* ═══════════════════════════════════════════
@@ -1134,6 +1130,9 @@
       <div class="session-list" id="sessionList"></div>
     </div>
 
+    <!-- ── Install CTA (inline, shown by JS when prompt is available) ── -->
+    <button id="installBtn" style="display:none;">⬇ Install App</button>
+
     <p class="footer-note">Install on your phone from Chrome or Safari after deployment for the full app experience.</p>
 
   </div>
@@ -1153,9 +1152,6 @@
       <span class="ab-label">Save</span>
     </button>
   </div>
-
-  <!-- ── Install CTA ─────────────────────────────── -->
-  <button id="installBtn" style="display:none;">⬇ Install App</button>
 
   <!-- ── Toast ──────────────────────────────────── -->
   <div class="toast" id="toast"></div>
