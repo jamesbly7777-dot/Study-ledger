@@ -236,6 +236,8 @@ async function stopAndSaveTimer() {
   renderAll();
   showToast("Session saved" + (state.user ? " · syncing…" : ""));
   if (state.user) await pushLocalToCloud(false);
+  checkGoalReached();
+  checkStreakMilestone();
 }
 
 /* ─── Stats ──────────────────────────────────────────────── */
@@ -437,12 +439,115 @@ function addDemoData() {
   showToast("Demo data added");
 }
 
-/* ─── Notifications / theme ──────────────────────────────── */
+/* ─── Notifications ──────────────────────────────────────── */
+
+function updateNotifyBtn() {
+  if (!el.notifyBtn) return;
+  const perm = "Notification" in window ? Notification.permission : "unsupported";
+  if (perm === "granted") {
+    el.notifyBtn.textContent = "🔔 Notifications On";
+    el.notifyBtn.style.opacity = "0.6";
+  } else if (perm === "denied") {
+    el.notifyBtn.textContent = "🔕 Notifications Blocked";
+    el.notifyBtn.style.opacity = "0.6";
+  } else {
+    el.notifyBtn.textContent = "🔔 Enable Notifications";
+    el.notifyBtn.style.opacity = "1";
+  }
+}
 
 async function enableNotifications() {
-  if (!("Notification" in window)) { showToast("Notifications not supported"); return; }
+  if (!("Notification" in window)) {
+    showToast("Notifications not supported on this browser");
+    return;
+  }
+  if (Notification.permission === "granted") {
+    showToast("Notifications are already on");
+    scheduleStreakReminder();
+    return;
+  }
+  if (Notification.permission === "denied") {
+    showToast("Notifications blocked — go to browser Settings → Site Settings to allow them");
+    return;
+  }
   const result = await Notification.requestPermission();
-  showToast(result === "granted" ? "Notifications enabled" : "Notifications denied");
+  updateNotifyBtn();
+  if (result === "granted") {
+    showToast("Notifications enabled!");
+    new Notification("Atlas Study Tracker Pro", {
+      body: "You'll get streak reminders and goal alerts. Keep studying!",
+      icon: "/icon-192.png"
+    });
+    scheduleStreakReminder();
+  } else {
+    showToast("Notifications not enabled");
+  }
+}
+
+function fireNotification(title, body) {
+  if (Notification.permission !== "granted") return;
+  new Notification(title, { body, icon: "/icon-192.png" });
+}
+
+function checkGoalReached() {
+  if (Notification.permission !== "granted") return;
+  const todayH = getTodayHours();
+  const goal   = state.dailyGoal;
+  if (todayH >= goal) {
+    fireNotification(
+      "Daily Goal Crushed!",
+      `You've logged ${todayH.toFixed(2)}h today — ${goal}h goal reached! Keep the streak alive.`
+    );
+  }
+}
+
+function checkStreakMilestone() {
+  if (Notification.permission !== "granted") return;
+  const streak     = getStreak();
+  const milestones = [7, 14, 30, 50, 100];
+  if (milestones.includes(streak)) {
+    fireNotification(
+      `${streak}-Day Streak!`,
+      `You've studied every day for ${streak} days in a row. Incredible consistency!`
+    );
+  }
+}
+
+function scheduleStreakReminder() {
+  if (Notification.permission !== "granted") return;
+
+  const now  = new Date();
+  const hour = now.getHours();
+
+  // If it's already past 6pm and they haven't studied, fire immediately
+  if (hour >= 18) {
+    const todayH = getTodayHours();
+    if (todayH === 0) {
+      const streak  = getStreak();
+      const streakMsg = streak > 0
+        ? `Your ${streak}-day streak ends at midnight!`
+        : "Log a session today to start building your streak!";
+      fireNotification("Time to Study!", streakMsg);
+    }
+  }
+
+  // Schedule a reminder at 8pm tonight if app stays open
+  const target    = new Date();
+  target.setHours(20, 0, 0, 0);
+  const msUntil8pm = target.getTime() - now.getTime();
+  if (msUntil8pm > 0) {
+    setTimeout(() => {
+      if (Notification.permission !== "granted") return;
+      const todayH = getTodayHours();
+      if (todayH < state.dailyGoal) {
+        const streak = getStreak();
+        const msg    = streak > 0
+          ? `Your ${streak}-day streak ends at midnight — log a session now!`
+          : "You haven't studied today. Open the timer and log a session!";
+        fireNotification("Evening Study Reminder", msg);
+      }
+    }, msUntil8pm);
+  }
 }
 
 function applyTheme(theme) {
@@ -693,7 +798,12 @@ document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   bindEvents();
   updateAuthUI();
+  updateNotifyBtn();
   initFirebase();
   initInstallPrompt();
   renderAll();
+  // If notifications already granted, schedule streak reminder on load
+  if ("Notification" in window && Notification.permission === "granted") {
+    scheduleStreakReminder();
+  }
 });
