@@ -1229,6 +1229,31 @@
       }
 
       /* ═══════════════════════════════════════════
+       MANUAL ENTRY
+    ═══════════════════════════════════════════ */
+      #manualToggleBtn {
+        width: 100%;
+        border: 2px dashed var(--border);
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 0.92rem;
+        letter-spacing: 0.02em;
+      }
+      #manualToggleBtn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: transparent;
+      }
+      #manualEntrySection {
+        margin-top: 14px;
+      }
+      .manual-row-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      /* ═══════════════════════════════════════════
        TOAST
     ═══════════════════════════════════════════ */
       .toast {
@@ -1477,6 +1502,80 @@
             <button class="btn btn-red" id="stopBtn" type="button">
               ⏹&nbsp; Save
             </button>
+          </div>
+        </div>
+
+        <!-- Manual Entry card -->
+        <div class="card">
+          <button class="btn" id="manualToggleBtn" type="button">
+            ✏️&nbsp; Log a Past Session
+          </button>
+          <div id="manualEntrySection" style="display:none;">
+            <div class="field-group">
+              <div class="manual-row-2">
+                <input
+                  class="field"
+                  id="manualDate"
+                  type="date"
+                  aria-label="Session date"
+                />
+                <input
+                  class="field"
+                  id="manualStartTime"
+                  type="time"
+                  value="12:00"
+                  aria-label="Start time"
+                />
+              </div>
+              <div class="manual-row-2">
+                <input
+                  class="field"
+                  id="manualHours"
+                  type="number"
+                  min="0"
+                  max="24"
+                  placeholder="Hours"
+                  inputmode="numeric"
+                />
+                <input
+                  class="field"
+                  id="manualMins"
+                  type="number"
+                  min="0"
+                  max="59"
+                  placeholder="Mins"
+                  inputmode="numeric"
+                />
+              </div>
+              <input
+                class="field"
+                id="manualTitle"
+                placeholder="Session title"
+                autocomplete="off"
+              />
+              <div class="manual-row-2">
+                <input
+                  class="field"
+                  id="manualCategory"
+                  placeholder="Category"
+                  autocomplete="off"
+                />
+                <input
+                  class="field"
+                  id="manualFocus"
+                  placeholder="Focus 1–5"
+                  inputmode="numeric"
+                />
+              </div>
+              <textarea
+                class="textarea"
+                id="manualNotes"
+                placeholder="Notes..."
+              ></textarea>
+              <button class="btn btn-green" id="manualAddBtn" type="button">
+                + Add Session
+              </button>
+            </div>
           </div>
         </div>
 

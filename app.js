@@ -54,8 +54,19 @@ const el = {
   startBtn:       document.getElementById("startBtn"),
   pauseBtn:       document.getElementById("pauseBtn"),
   stopBtn:        document.getElementById("stopBtn"),
-  installBtn:     document.getElementById("installBtn"),
-  toast:          document.getElementById("toast")
+  installBtn:          document.getElementById("installBtn"),
+  toast:               document.getElementById("toast"),
+  manualToggleBtn:     document.getElementById("manualToggleBtn"),
+  manualEntrySection:  document.getElementById("manualEntrySection"),
+  manualDate:          document.getElementById("manualDate"),
+  manualStartTime:     document.getElementById("manualStartTime"),
+  manualHours:         document.getElementById("manualHours"),
+  manualMins:          document.getElementById("manualMins"),
+  manualTitle:         document.getElementById("manualTitle"),
+  manualCategory:      document.getElementById("manualCategory"),
+  manualFocus:         document.getElementById("manualFocus"),
+  manualNotes:         document.getElementById("manualNotes"),
+  manualAddBtn:        document.getElementById("manualAddBtn")
 };
 
 /* ─── Toast ─────────────────────────────────────────────── */
@@ -739,6 +750,67 @@ async function logout() {
   }
 }
 
+/* ─── Manual entry ───────────────────────────────────────── */
+
+function toggleManualEntry() {
+  if (!el.manualEntrySection) return;
+  const isHidden = el.manualEntrySection.style.display === "none" || !el.manualEntrySection.style.display;
+  el.manualEntrySection.style.display = isHidden ? "block" : "none";
+  if (el.manualToggleBtn) {
+    el.manualToggleBtn.textContent = isHidden ? "✏️ Hide Manual Entry" : "✏️ Log a Past Session";
+  }
+  if (isHidden && el.manualDate) {
+    const today = new Date();
+    el.manualDate.value = today.toISOString().split("T")[0];
+  }
+}
+
+async function manualAddSession() {
+  const dateStr = el.manualDate?.value;
+  const hours   = parseInt(el.manualHours?.value  || "0", 10);
+  const mins    = parseInt(el.manualMins?.value   || "0", 10);
+  const title   = (el.manualTitle?.value    || "").trim();
+  const cat     = (el.manualCategory?.value || "").trim();
+  const focus   = (el.manualFocus?.value    || "").trim();
+  const notes   = (el.manualNotes?.value    || "").trim();
+  const timeStr = el.manualStartTime?.value || "12:00";
+
+  if (!dateStr) return showToast("Pick a date");
+  const totalMs = (hours * 3600 + mins * 60) * 1000;
+  if (totalMs < 60000) return showToast("Enter at least 1 minute");
+
+  const startedAt = new Date(`${dateStr}T${timeStr}:00`);
+  const endedAt   = new Date(startedAt.getTime() + totalMs);
+
+  const session = {
+    id:        crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+    title:     title || "Study Session",
+    category:  cat   || "General",
+    focus,
+    notes,
+    ms:        totalMs,
+    hours:     hoursFromMs(totalMs),
+    startedAt: startedAt.toISOString(),
+    endedAt:   endedAt.toISOString()
+  };
+
+  state.sessions.unshift(session);
+  state.sessions.sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+  saveLocalState();
+  renderAll();
+  showToast("Session added" + (state.user ? " · syncing…" : ""));
+  if (state.user) await pushLocalToCloud(false);
+  checkGoalReached();
+  checkStreakMilestone();
+
+  if (el.manualHours)    el.manualHours.value    = "";
+  if (el.manualMins)     el.manualMins.value      = "";
+  if (el.manualTitle)    el.manualTitle.value     = "";
+  if (el.manualCategory) el.manualCategory.value  = "";
+  if (el.manualFocus)    el.manualFocus.value     = "";
+  if (el.manualNotes)    el.manualNotes.value      = "";
+}
+
 /* ─── Event bindings ─────────────────────────────────────── */
 
 function bindEvents() {
@@ -755,6 +827,8 @@ function bindEvents() {
   el.loginBtn?.addEventListener("click", login);
   el.logoutBtn?.addEventListener("click", logout);
   el.syncBtn?.addEventListener("click", () => pushLocalToCloud(true));
+  el.manualToggleBtn?.addEventListener("click", toggleManualEntry);
+  el.manualAddBtn?.addEventListener("click", manualAddSession);
 
   el.passwordInput?.addEventListener("keydown", e => {
     if (e.key === "Enter") login();
