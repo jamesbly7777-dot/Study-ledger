@@ -1,0 +1,32 @@
+# Android signing keys (SENSITIVE - never commit)
+upload-key.jks
+*.jks
+*.keystore
+upload_certificate.pem
+*.pem
+
+# Built binaries
+*.apk
+*.aab
+*.idsig
+
+# Build output
+build/
+.gradle/
+
+# Logs and temp files
+*.log
+log.txt
+build-log.txt
+manifest-checksum.txt
+
+# Unknown binary files
+newtest
+newtest2
+
+# Node
+node_modules/
+
+# Firebase credentials (if any JSON key files)
+*-firebase-adminsdk-*.json
+google-services.json

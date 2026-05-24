@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Atlas Study Tracker Pro</string>
+    <string name="title_activity_main">Atlas Study Tracker Pro</string>
+    <string name="package_name">com.jamesbly.atlasstudy</string>
+    <string name="custom_url_scheme">com.jamesbly.atlasstudy</string>
+</resources>
